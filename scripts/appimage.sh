@@ -57,6 +57,8 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 APPS_DIR="$DATA_HOME/applications"
 ICONS_DIR="$DATA_HOME/icons/hicolor/256x256/apps"
 DESKTOP_PATH="$APPS_DIR/$APP_ID.desktop"
+BIN_DIR="$HOME/.local/bin"
+CLI_PATH="$BIN_DIR/$APP_NAME"   # `pray --tray` etc.
 # Created by `uninstall`, so the menu entry is not silently recreated.
 OPT_OUT="$CONFIG_HOME/$APP_NAME-appimage-no-integrate"
 
@@ -104,6 +106,22 @@ write_desktop_entry() {
     refresh_caches
 }
 
+# Makes `$APP_NAME` available as a command (symlink to the AppImage).
+# Never overwrites a regular file the user put there.
+link_cli() {
+    local target="$1"
+    mkdir -p "$BIN_DIR"
+    if [[ -e "$CLI_PATH" && ! -L "$CLI_PATH" ]]; then
+        echo "Not creating $CLI_PATH: a non-symlink file already exists." >&2
+        return 0
+    fi
+    ln -sfn "$target" "$CLI_PATH"
+}
+
+cli_is_current() {
+    [[ -L "$CLI_PATH" && "$(readlink -f "$CLI_PATH" 2>/dev/null || true)" == "$1" ]]
+}
+
 # First launch (or after the AppImage was moved): register the app.
 auto_integrate() {
     [[ -n "${APPIMAGE:-}" ]] || return 0
@@ -114,19 +132,20 @@ auto_integrate() {
     target="$(readlink -f "$APPIMAGE")"
     exec_line="$(exec_line_for "$target")"
     if [[ -f "$DESKTOP_PATH" && -f "$ICONS_DIR/$APP_ID.png" ]] \
-        && grep -qxF -- "$exec_line" "$DESKTOP_PATH"; then
+        && grep -qxF -- "$exec_line" "$DESKTOP_PATH" \
+        && { [[ -e "$CLI_PATH" && ! -L "$CLI_PATH" ]] || cli_is_current "$target"; }; then
         return 0
     fi
     write_desktop_entry "$target" || true
+    link_cli "$target" || true
 }
 
 install_app() {
-    local appimage_path bin_dir installed
+    local appimage_path installed
     appimage_path="$(readlink -f "${APPIMAGE:-$0}")"
-    bin_dir="$HOME/.local/bin"
-    installed="$bin_dir/$APP_NAME.AppImage"
+    installed="$BIN_DIR/$APP_NAME.AppImage"
 
-    mkdir -p "$bin_dir"
+    mkdir -p "$BIN_DIR"
     if [[ "$appimage_path" != "$(readlink -f "$installed" 2>/dev/null || true)" ]]; then
         cp -f "$appimage_path" "$installed"
     fi
@@ -134,16 +153,22 @@ install_app() {
 
     rm -f "$OPT_OUT"
     write_desktop_entry "$installed"
+    link_cli "$installed"
 
     echo "Installed $APP_NAME:"
     echo "  binary:  $installed"
+    echo "  command: $CLI_PATH"
     echo "  desktop: $DESKTOP_PATH"
     echo "  icon:    $ICONS_DIR/$APP_ID.png"
-    echo "Make sure $bin_dir is on your PATH."
+    case ":$PATH:" in
+        *":$BIN_DIR:"*) ;;
+        *) echo "Add $BIN_DIR to your PATH to use the '$APP_NAME' command." ;;
+    esac
 }
 
 uninstall_app() {
-    rm -f "$HOME/.local/bin/$APP_NAME.AppImage" "$DESKTOP_PATH" "$ICONS_DIR/$APP_ID.png"
+    rm -f "$BIN_DIR/$APP_NAME.AppImage" "$DESKTOP_PATH" "$ICONS_DIR/$APP_ID.png"
+    [[ -L "$CLI_PATH" ]] && rm -f "$CLI_PATH"
     mkdir -p "$(dirname "$OPT_OUT")"
     : > "$OPT_OUT"
     refresh_caches
