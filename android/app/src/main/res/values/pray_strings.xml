@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vpn_channel">VPN service</string>
+    <string name="connecting">Connecting…</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vpn_channel">Layanan VPN</string>
+    <string name="connecting">Menghubungkan…</string>
+    <string name="connected">Terhubung</string>
+    <string name="disconnected">Terputus</string>
+</resources>

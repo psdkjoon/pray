@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vpn_channel">VPN サービス</string>
+    <string name="connecting">接続中…</string>
+    <string name="connected">接続済み</string>
+    <string name="disconnected">未接続</string>
+</resources>

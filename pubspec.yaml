@@ -1,0 +1,69 @@
+name: pray
+description: "psdkRay: a Catppuccin-themed Xray client for Android and Linux."
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  xray_config:
+    path: packages/xray_config
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/xray/linux/xray
+    - assets/xray/linux/geoip.dat
+    - assets/xray/linux/geosite.dat
+
+  fonts:
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
+          weight: 700
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/noto/NotoSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/noto/NotoSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/noto/NotoSans-Bold.ttf
+          weight: 700
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/noto/NotoSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/noto/NotoSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/noto/NotoSansArabic-Bold.ttf
+          weight: 700
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/noto/NotoSansSC-Regular.otf
+          weight: 400
+        - asset: assets/fonts/noto/NotoSansSC-Bold.otf
+          weight: 700
+    - family: NotoSansJP
+      fonts:
+        - asset: assets/fonts/noto/NotoSansJP-Regular.otf
+          weight: 400
+        - asset: assets/fonts/noto/NotoSansJP-Bold.otf
+          weight: 700

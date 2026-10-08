@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vpn_channel">سرویس VPN</string>
+    <string name="connecting">در حال اتصال…</string>
+    <string name="connected">متصل</string>
+    <string name="disconnected">قطع شده</string>
+</resources>

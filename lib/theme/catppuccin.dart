@@ -1,0 +1,96 @@
+import 'package:flutter/material.dart';
+
+@immutable
+class CatppuccinPalette {
+  const CatppuccinPalette({
+    required this.rosewater,
+    required this.flamingo,
+    required this.pink,
+    required this.mauve,
+    required this.red,
+    required this.maroon,
+    required this.peach,
+    required this.yellow,
+    required this.green,
+    required this.teal,
+    required this.sky,
+    required this.sapphire,
+    required this.blue,
+    required this.lavender,
+    required this.text,
+    required this.subtext1,
+    required this.subtext0,
+    required this.overlay2,
+    required this.overlay1,
+    required this.overlay0,
+    required this.surface2,
+    required this.surface1,
+    required this.surface0,
+    required this.base,
+    required this.mantle,
+    required this.crust,
+  });
+
+  final Color rosewater, flamingo, pink, mauve, red, maroon, peach, yellow;
+  final Color green, teal, sky, sapphire, blue, lavender;
+  final Color text, subtext1, subtext0, overlay2, overlay1, overlay0;
+  final Color surface2, surface1, surface0, base, mantle, crust;
+
+  static const mocha = CatppuccinPalette(
+    rosewater: Color(0xFFF5E0DC),
+    flamingo: Color(0xFFF2CDCD),
+    pink: Color(0xFFF5C2E7),
+    mauve: Color(0xFFCBA6F7),
+    red: Color(0xFFF38BA8),
+    maroon: Color(0xFFEBA0AC),
+    peach: Color(0xFFFAB387),
+    yellow: Color(0xFFF9E2AF),
+    green: Color(0xFFA6E3A1),
+    teal: Color(0xFF94E2D5),
+    sky: Color(0xFF89DCEB),
+    sapphire: Color(0xFF74C7EC),
+    blue: Color(0xFF89B4FA),
+    lavender: Color(0xFFB4BEFE),
+    text: Color(0xFFCDD6F4),
+    subtext1: Color(0xFFBAC2DE),
+    subtext0: Color(0xFFA6ADC8),
+    overlay2: Color(0xFF9399B2),
+    overlay1: Color(0xFF7F849C),
+    overlay0: Color(0xFF6C7086),
+    surface2: Color(0xFF585B70),
+    surface1: Color(0xFF45475A),
+    surface0: Color(0xFF313244),
+    base: Color(0xFF1E1E2E),
+    mantle: Color(0xFF181825),
+    crust: Color(0xFF11111B),
+  );
+
+  static const latte = CatppuccinPalette(
+    rosewater: Color(0xFFDC8A78),
+    flamingo: Color(0xFFDD7878),
+    pink: Color(0xFFEA76CB),
+    mauve: Color(0xFF8839EF),
+    red: Color(0xFFD20F39),
+    maroon: Color(0xFFE64553),
+    peach: Color(0xFFFE640B),
+    yellow: Color(0xFFDF8E1D),
+    green: Color(0xFF40A02B),
+    teal: Color(0xFF179299),
+    sky: Color(0xFF04A5E5),
+    sapphire: Color(0xFF209FB5),
+    blue: Color(0xFF1E66F5),
+    lavender: Color(0xFF7287FD),
+    text: Color(0xFF4C4F69),
+    subtext1: Color(0xFF5C5F77),
+    subtext0: Color(0xFF6C6F85),
+    overlay2: Color(0xFF7C7F93),
+    overlay1: Color(0xFF8C8FA1),
+    overlay0: Color(0xFF9CA0B0),
+    surface2: Color(0xFFACB0BE),
+    surface1: Color(0xFFBCC0CC),
+    surface0: Color(0xFFCCD0DA),
+    base: Color(0xFFEFF1F5),
+    mantle: Color(0xFFE6E9EF),
+    crust: Color(0xFFDCE0E8),
+  );
+}

@@ -1,0 +1,7 @@
+name: xray_config
+description: Pure-Dart share-link parsing and Xray-core config generation for Pray.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
