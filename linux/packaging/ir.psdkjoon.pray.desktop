@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Pray
+Comment=A Catppuccin-themed Xray client
+Exec=pray
+Icon=ir.psdkjoon.pray
+Terminal=false
+Categories=Network;
+StartupWMClass=ir.psdkjoon.pray
