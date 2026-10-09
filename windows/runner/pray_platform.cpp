@@ -82,11 +82,11 @@ std::optional<int64_t> AsInt(const EncodableValue* value) {
   if (value == nullptr) {
     return std::nullopt;
   }
-  if (const auto* small = std::get_if<int32_t>(value)) {
-    return static_cast<int64_t>(*small);
+  if (const auto* narrow = std::get_if<int32_t>(value)) {
+    return static_cast<int64_t>(*narrow);
   }
-  if (const auto* large = std::get_if<int64_t>(value)) {
-    return *large;
+  if (const auto* wide_int = std::get_if<int64_t>(value)) {
+    return *wide_int;
   }
   return std::nullopt;
 }
