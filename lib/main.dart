@@ -48,7 +48,7 @@ Future<void> _initPlatform(
 
   final tasks = <Future<void>>[];
 
-  if (Platform.isLinux) {
+  if (Platform.isLinux || Platform.isWindows) {
     tasks.add(() async {
       settings.launchAtLogin = await AutostartService.isEnabled();
     }());

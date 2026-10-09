@@ -228,8 +228,60 @@ jobs:
           path: dist/*.AppImage
           if-no-files-found: error
 
+  windows:
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Fetch xray-core for Windows
+        run: bash ./scripts/fetch-xray.sh windows-64
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      - name: Check the bundle
+        run: |
+          dir=build/windows/x64/runner/Release
+          test -f "$dir/pray.exe"
+          test -f "$dir/flutter_windows.dll"
+          test -f "$dir/data/app.so"
+          test "$(wc -c < "$dir/data/flutter_assets/assets/xray/windows/xray.exe")" -gt 1000000
+          test -s "$dir/data/flutter_assets/assets/xray/linux/geoip.dat"
+
+      - name: Bundle the Visual C++ runtime
+        # Lets the app start on a PC that has never installed the VC++
+        # redistributable.
+        run: |
+          dir=build/windows/x64/runner/Release
+          for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+            cp "/c/Windows/System32/$dll" "$dir/" || echo "warning: $dll not found"
+          done
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath dist/Pray-windows-x64.zip -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: dist/Pray-windows-x64.zip
+          if-no-files-found: error
+
   release:
-    needs: [android, linux]
+    needs: [android, linux, windows]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -263,3 +315,4 @@ jobs:
           files: |
             artifacts/android-signed-apks/*.apk
             artifacts/linux-appimage-*/*.AppImage
+            artifacts/windows-x64/*.zip

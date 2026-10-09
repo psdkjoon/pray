@@ -108,6 +108,9 @@ struct TrayState {
   GDBusNodeInfo* node_info = nullptr;
   GDBusNodeInfo* menu_info = nullptr;
   guint owner_id = 0;
+  guint watcher_id = 0;
+  gchar* bus_name = nullptr;
+  gboolean registered = FALSE;
   guint registration_id = 0;
   guint menu_registration_id = 0;
   guint32 menu_revision = 1;
@@ -356,7 +359,38 @@ static void on_watcher_registered(GObject* source, GAsyncResult* result,
   g_autoptr(GError) error = nullptr;
   GVariant* reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source),
                                                   result, &error);
+  if (state == nullptr) {
+    if (reply != nullptr) g_variant_unref(reply);
+    return;
+  }
+  state->registered = reply != nullptr;
   if (reply != nullptr) g_variant_unref(reply);
+}
+
+// Registers our item with the StatusNotifierWatcher. This runs every time the
+// watcher shows up on the bus, not just once at startup: when the app is
+// started at login the panel (and its tray) is often not ready yet, and a
+// single early attempt would leave the app without a tray icon for good.
+static void register_with_watcher() {
+  if (state == nullptr || state->connection == nullptr ||
+      state->bus_name == nullptr)
+    return;
+  g_dbus_connection_call(state->connection, "org.kde.StatusNotifierWatcher",
+                         "/StatusNotifierWatcher",
+                         "org.kde.StatusNotifierWatcher",
+                         "RegisterStatusNotifierItem",
+                         g_variant_new("(s)", state->bus_name), nullptr,
+                         G_DBUS_CALL_FLAGS_NONE, 5000, nullptr,
+                         on_watcher_registered, nullptr);
+}
+
+static void on_watcher_appeared(GDBusConnection*, const gchar*, const gchar*,
+                                gpointer) {
+  register_with_watcher();
+}
+
+static void on_watcher_vanished(GDBusConnection*, const gchar*, gpointer) {
+  if (state != nullptr) state->registered = FALSE;
 }
 
 static void on_bus_acquired(GDBusConnection* connection, const gchar*,
@@ -372,13 +406,15 @@ static void on_bus_acquired(GDBusConnection* connection, const gchar*,
 
 static void on_name_acquired(GDBusConnection* connection, const gchar* name,
                              gpointer) {
-  g_dbus_connection_call(connection, "org.kde.StatusNotifierWatcher",
-                         "/StatusNotifierWatcher",
-                         "org.kde.StatusNotifierWatcher",
-                         "RegisterStatusNotifierItem",
-                         g_variant_new("(s)", name), nullptr,
-                         G_DBUS_CALL_FLAGS_NONE, -1, nullptr,
-                         on_watcher_registered, nullptr);
+  if (state->watcher_id != 0) return;
+  g_free(state->bus_name);
+  state->bus_name = g_strdup(name);
+  // Calls on_watcher_appeared right away if the watcher already exists, and
+  // again whenever it (re)appears later.
+  state->watcher_id = g_bus_watch_name_on_connection(
+      connection, "org.kde.StatusNotifierWatcher",
+      G_BUS_NAME_WATCHER_FLAGS_NONE, on_watcher_appeared, on_watcher_vanished,
+      nullptr, nullptr);
 }
 
 static void create_tray(const gchar* icon_path, const gchar* title) {
@@ -447,6 +483,10 @@ static void method_call_cb(FlMethodChannel*, FlMethodCall* call, gpointer) {
   g_autoptr(FlMethodResponse) response =
       FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
   fl_method_call_respond(call, response, nullptr);
+}
+
+gboolean tray_is_registered() {
+  return state != nullptr && state->registered;
 }
 
 void tray_register(FlBinaryMessenger* messenger) {

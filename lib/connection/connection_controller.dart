@@ -51,9 +51,15 @@ class ConnectionController extends ChangeNotifier {
   ConnectionStatus get status => _status;
   Duration get elapsed => _elapsed;
   bool get isConnected => _status == ConnectionStatus.connected;
-  ConnectionMode get mode => Platform.isAndroid ? ConnectionMode.tun : _mode;
+  ConnectionMode get mode {
+    if (Platform.isAndroid) return ConnectionMode.tun;
+    if (Platform.isWindows) return ConnectionMode.proxy;
+    return _mode;
+  }
   bool get canChangeMode =>
-      !Platform.isAndroid && _status == ConnectionStatus.disconnected;
+      !Platform.isAndroid &&
+      !Platform.isWindows &&
+      _status == ConnectionStatus.disconnected;
 
   String? get lastError => _lastError;
 

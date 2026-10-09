@@ -20,6 +20,10 @@ abstract class SystemService {
       await _channel.invokeMethod<void>('openUrl', {'url': url});
       return;
     }
+    if (Platform.isWindows) {
+      await _channel.invokeMethod<void>('openUrl', {'url': url});
+      return;
+    }
     await Process.start(
       'xdg-open',
       [url],
@@ -37,7 +41,7 @@ abstract class SystemService {
   }
 
   static Future<void> notify(String title, String body) async {
-    if (!Platform.isLinux) return;
+    if (!Platform.isLinux && !Platform.isWindows) return;
     try {
       await _window.invokeMethod<void>('notify', {'title': title, 'body': body});
     } on PlatformException {
@@ -63,6 +67,15 @@ abstract class SystemService {
       return (ok ?? false) ? name : null;
     }
     final downloads = await AppDirs.downloads();
+    if (Platform.isWindows) {
+      final path = await _channel.invokeMethod<String>('saveFilePath', {
+        'name': name,
+        'dir': downloads,
+      });
+      if (path == null || path.isEmpty) return null;
+      await File(path).writeAsBytes(bytes, flush: true);
+      return path;
+    }
     final chosen = await _linuxDialog(
       zenity: [
         '--file-selection',
@@ -81,6 +94,11 @@ abstract class SystemService {
   static Future<Uint8List?> pickFile() async {
     if (Platform.isAndroid) {
       return _channel.invokeMethod<Uint8List>('pickFile');
+    }
+    if (Platform.isWindows) {
+      final path = await _channel.invokeMethod<String>('pickFilePath');
+      if (path == null || path.isEmpty) return null;
+      return File(path).readAsBytes();
     }
     final chosen = await _linuxDialog(
       zenity: ['--file-selection'],

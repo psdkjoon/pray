@@ -73,7 +73,11 @@ abstract class UpdateChecker {
   static Future<String> _downloadUrl(String version) async {
     try {
       final key = await _deviceKey();
-      final extension = Platform.isAndroid ? '.apk' : '.appimage';
+      final extension = Platform.isAndroid
+          ? '.apk'
+          : Platform.isWindows
+              ? '.zip'
+              : '.appimage';
       if (key == null) return _releasePage(version);
       final release = jsonDecode(await _get(_releaseApi(version)));
       final assets = (release as Map)['assets'] as List;
@@ -96,6 +100,7 @@ abstract class UpdateChecker {
       final abi = await SystemService.androidAbi();
       return abi?.toLowerCase();
     }
+    if (Platform.isWindows) return 'windows';
     if (Platform.isLinux) {
       final result = await Process.run('uname', ['-m']);
       final machine = '${result.stdout}'.trim().toLowerCase();

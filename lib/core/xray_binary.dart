@@ -18,6 +18,7 @@ class XrayInstall {
 
 Future<XrayInstall> resolveXrayInstall() async {
   if (Platform.isLinux) return _LinuxXrayBinary.ensureExtracted();
+  if (Platform.isWindows) return _WindowsXrayBinary.ensureExtracted();
   if (Platform.isAndroid) return _AndroidXrayBinary.resolve();
   throw UnsupportedError('No bundled xray for this platform.');
 }
@@ -216,6 +217,76 @@ abstract class _LinuxXrayBinary {
       binaryPath: binaryPath,
       writableDir: '${Platform.environment['HOME']}/.config/pray',
       assetDir: dir.path,
+    );
+  }
+}
+
+abstract class _WindowsXrayBinary {
+  static const _binaryAsset = 'assets/xray/windows/xray.exe';
+  static const _geoAssetDir = 'assets/xray/linux';
+  static const _geoFiles = ['geoip.dat', 'geosite.dat'];
+
+  static String get _installDir {
+    final base = Platform.environment['LOCALAPPDATA'] ??
+        Platform.environment['APPDATA'] ??
+        Directory.systemTemp.path;
+    return '$base\\pray\\xray';
+  }
+
+  static String get _writableDir {
+    final base = Platform.environment['APPDATA'] ??
+        Platform.environment['USERPROFILE'] ??
+        Directory.systemTemp.path;
+    return '$base\\pray';
+  }
+
+  static Future<bool> _write(File file, List<int> bytes) async {
+    if (await file.exists() && await file.length() == bytes.length) return true;
+    try {
+      await file.writeAsBytes(bytes, flush: true);
+      return true;
+    } on FileSystemException {
+      // Most likely xray.exe is still running from a previous session.
+      return await file.exists();
+    }
+  }
+
+  static Future<XrayInstall> ensureExtracted() async {
+    final dir = Directory(_installDir);
+    await dir.create(recursive: true);
+
+    final binary = await rootBundle.load(_binaryAsset);
+    final bytes =
+        binary.buffer.asUint8List(binary.offsetInBytes, binary.lengthInBytes);
+    // The placeholder shipped in non-Windows builds is empty, and a real
+    // xray.exe is several megabytes. "MZ" is the PE header magic.
+    if (bytes.length < 1024 * 1024 || bytes[0] != 0x4d || bytes[1] != 0x5a) {
+      throw StateError(
+        'This build has no bundled xray. Run scripts/fetch-xray.sh '
+        'windows-64 and rebuild.',
+      );
+    }
+    final exe = File('${dir.path}\\xray.exe');
+    if (!await _write(exe, bytes)) {
+      throw StateError("Couldn't write ${exe.path}.");
+    }
+
+    var haveGeo = true;
+    for (final name in _geoFiles) {
+      final data = await rootBundle.load('$_geoAssetDir/$name');
+      final geo =
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      if (geo.isEmpty || !await _write(File('${dir.path}\\$name'), geo)) {
+        haveGeo = false;
+      }
+    }
+
+    final writable = Directory(_writableDir);
+    await writable.create(recursive: true);
+    return XrayInstall(
+      binaryPath: exe.path,
+      writableDir: writable.path,
+      assetDir: haveGeo ? dir.path : null,
     );
   }
 }

@@ -132,7 +132,8 @@ class _Hero extends StatelessWidget {
             ),
           ),
         ],
-        if (defaultTargetPlatform != TargetPlatform.android) ...[
+        if (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.windows) ...[
         const SizedBox(height: AppSpacing.lg),
         SegmentedButton<ConnectionMode>(
           showSelectedIcon: false,

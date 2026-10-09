@@ -1,7 +1,7 @@
 name: pray
-description: "psdkRay: a Catppuccin-themed Xray client for Android and Linux."
+description: "psdkRay: a Catppuccin-themed Xray client for Android, Linux and Windows."
 publish_to: 'none'
-version: 1.0.1
+version: 1.1.0
 
 environment:
   sdk: ^3.6.0
@@ -27,6 +27,7 @@ flutter:
     - assets/xray/linux/xray
     - assets/xray/linux/geoip.dat
     - assets/xray/linux/geosite.dat
+    - assets/xray/windows/xray.exe
 
   fonts:
     - family: SpaceGrotesk

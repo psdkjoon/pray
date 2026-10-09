@@ -23,7 +23,7 @@ abstract class NotificationService {
   }
 
   static void _onStatusChanged(ConnectionController connection) {
-    if (!Platform.isLinux) return;
+    if (!Platform.isLinux && !Platform.isWindows) return;
     final status = connection.status;
     if (status == _last) return;
     _last = status;

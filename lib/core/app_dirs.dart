@@ -13,6 +13,11 @@ abstract class AppDirs {
     if (Platform.isAndroid) {
       final paths = await _channel.invokeMapMethod<String, String>('resolve');
       path = paths?['filesDir'] ?? Directory.systemTemp.path;
+    } else if (Platform.isWindows) {
+      final base = Platform.environment['APPDATA'] ??
+          Platform.environment['USERPROFILE'] ??
+          Directory.systemTemp.path;
+      path = '$base\\pray';
     } else {
       final base = Platform.environment['XDG_DATA_HOME'] ??
           '${Platform.environment['HOME']}/.local/share';
@@ -24,7 +29,10 @@ abstract class AppDirs {
 
   static Future<String> downloads() async {
     if (Platform.isAndroid) return data();
-    final home = Platform.environment['HOME'] ?? Directory.systemTemp.path;
+    final home = (Platform.isWindows
+            ? Platform.environment['USERPROFILE']
+            : Platform.environment['HOME']) ??
+        Directory.systemTemp.path;
     final dir = Directory('$home/Downloads');
     return await dir.exists() ? dir.path : home;
   }

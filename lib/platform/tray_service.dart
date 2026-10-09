@@ -24,14 +24,14 @@ class TrayService with WidgetsBindingObserver {
   bool _initialized = false;
 
   Future<void> init() async {
-    if (!Platform.isLinux || _initialized) return;
+    if ((!Platform.isLinux && !Platform.isWindows) || _initialized) return;
     _initialized = true;
 
     _channel.setMethodCallHandler(_onCall);
     _dark = _isDark;
     _iconKey = _stateKey(_dark!);
     await _channel.invokeMethod<void>('create', {
-      'icon': await _iconFilePath(_dark!),
+      ...await _iconArgs(_dark!),
       'title': AppInfo.name,
     });
     await _rebuildMenu();
@@ -93,9 +93,7 @@ class TrayService with WidgetsBindingObserver {
     try {
       _dark = dark;
       _iconKey = key;
-      await _channel.invokeMethod<void>('setIcon', {
-        'icon': await _iconFilePath(dark),
-      });
+      await _channel.invokeMethod<void>('setIcon', await _iconArgs(dark));
     } finally {
       _syncing = false;
     }
@@ -108,8 +106,12 @@ class TrayService with WidgetsBindingObserver {
         _ => dark ? const Color(0xFFF38BA8) : const Color(0xFFD20F39),
       };
 
-  Future<Uint8List> _withDot(Uint8List png, bool dark) async {
-    final codec = await ui.instantiateImageCodec(png);
+  Future<ui.Image> _renderDot(Uint8List png, bool dark, {int? size}) async {
+    final codec = await ui.instantiateImageCodec(
+      png,
+      targetWidth: size,
+      targetHeight: size,
+    );
     final frame = await codec.getNextFrame();
     final image = frame.image;
     final w = image.width.toDouble();
@@ -133,9 +135,38 @@ class TrayService with WidgetsBindingObserver {
         ..color = _dotColor(dark)
         ..isAntiAlias = true,
     );
-    final out = await recorder.endRecording().toImage(image.width, image.height);
+    return recorder.endRecording().toImage(image.width, image.height);
+  }
+
+  Future<Uint8List> _withDot(Uint8List png, bool dark) async {
+    final out = await _renderDot(png, dark);
     final data = await out.toByteData(format: ui.ImageByteFormat.png);
     return data!.buffer.asUint8List();
+  }
+
+  /// Arguments describing the icon for the native side: a PNG file on Linux,
+  /// raw pixels on Windows.
+  Future<Map<String, Object>> _iconArgs(bool dark) async {
+    if (Platform.isWindows) {
+      final bytes = await rootBundle.load(
+        dark ? AppIcon.trayMocha : AppIcon.trayLatte,
+      );
+      const size = 32;
+      final image = await _renderDot(
+        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+        dark,
+        size: size,
+      );
+      final data = await image.toByteData(
+        format: ui.ImageByteFormat.rawStraightRgba,
+      );
+      return {
+        'width': image.width,
+        'height': image.height,
+        'rgba': data!.buffer.asUint8List(),
+      };
+    }
+    return {'icon': await _iconFilePath(dark)};
   }
 
   Future<String> _iconFilePath(bool dark) async {

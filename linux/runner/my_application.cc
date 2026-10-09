@@ -21,6 +21,17 @@ static gboolean start_hidden(MyApplication* self) {
   return FALSE;
 }
 
+// When started hidden (launch at login), make sure the app does not stay
+// invisible if no tray ever picks up its icon.
+static gboolean show_if_no_tray(gpointer user_data) {
+  GtkWidget* window = GTK_WIDGET(user_data);
+  if (!tray_is_registered() && !gtk_widget_get_visible(window)) {
+    gtk_widget_show(window);
+    gtk_window_present(GTK_WINDOW(window));
+  }
+  return G_SOURCE_REMOVE;
+}
+
 static void first_frame_cb(MyApplication* self, FlView* view) {
   if (start_hidden(self)) return;
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
@@ -61,6 +72,11 @@ static void my_application_activate(GApplication* application) {
       fl_engine_get_binary_messenger(fl_view_get_engine(view));
   tray_register(messenger);
   platform_register(messenger, window, G_APPLICATION(application));
+
+  if (start_hidden(self)) {
+    g_timeout_add_seconds_full(G_PRIORITY_DEFAULT, 20, show_if_no_tray,
+                               g_object_ref(window), g_object_unref);
+  }
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

@@ -11,7 +11,7 @@ class WindowService {
   static const _channel = MethodChannel('pray/window');
 
   Future<void> _call(String method) async {
-    if (!Platform.isLinux) return;
+    if (!Platform.isLinux && !Platform.isWindows) return;
     try {
       await _channel.invokeMethod<void>(method);
     } on PlatformException {

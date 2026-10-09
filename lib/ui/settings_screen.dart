@@ -26,7 +26,8 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLinux = defaultTargetPlatform == TargetPlatform.linux;
+    final hasAutostart = defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.windows;
 
     return ListenableBuilder(
       listenable: Listenable.merge([settings, connection]),
@@ -164,14 +165,15 @@ class SettingsScreen extends StatelessWidget {
                       value: settings.connectOnLaunch,
                       onChanged: (value) => settings.connectOnLaunch = value,
                     ),
-                    if (isLinux)
+                    if (hasAutostart)
                       SwitchListTile(
                         title: const Text('Launch at login'),
                         subtitle: const Text('Start Pray with your session'),
                         value: settings.launchAtLogin,
-                        onChanged: (value) {
-                          settings.launchAtLogin = value;
-                          AutostartService.setEnabled(value);
+                        onChanged: (value) async {
+                          final ok = await AutostartService.setEnabled(value);
+                          settings.launchAtLogin =
+                              ok ? value : await AutostartService.isEnabled();
                         },
                       ),
                   ],
