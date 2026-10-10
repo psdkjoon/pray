@@ -29,7 +29,9 @@ abstract class AppDirs {
         final paths = await _channel.invokeMapMethod<String, String>('resolve');
         final dir = set(paths?['filesDir']);
         if (dir != null) return [dir];
-      } on Object {}
+      } on Object {
+        // just not to be empty :/
+      }
       return [];
     }
     if (Platform.isWindows) {

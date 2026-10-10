@@ -11,7 +11,7 @@ abstract class StartupLog {
         'Pray ${AppInfo.version} on ${Platform.operatingSystem} '
         '${Platform.operatingSystemVersion}\n$error\n${stack ?? ''}\n\n';
     for (final dir in [
-      () => AppDirs.data(),
+      AppDirs.data,
       () async => Directory.systemTemp.path,
     ]) {
       try {
