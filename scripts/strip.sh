@@ -73,6 +73,15 @@ for src_apk in "$APK_OUTPUT_DIR"/app-*-release.apk; do
         'META-INF/MANIFEST.MF' >/dev/null || rc=$?
     [[ $rc -eq 0 || $rc -eq 12 ]] || exit "$rc"
 
+    if [[ "$abi" != "universal" ]]; then
+        for other in arm64-v8a armeabi-v7a x86_64 x86; do
+            [[ "$other" == "$abi" ]] && continue
+            rc=0
+            zip -q -d "$patched_apk" "lib/$other/*" >/dev/null || rc=$?
+            [[ $rc -eq 0 || $rc -eq 12 ]] || exit "$rc"
+        done
+    fi
+
     aligned_apk="$work_dir/aligned.apk"
     run "$BUILD_TOOLS_DIR/zipalign" -f -P "$PAGE_KB" 4 "$patched_apk" "$aligned_apk"
 
