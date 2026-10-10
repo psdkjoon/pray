@@ -74,8 +74,6 @@ jobs:
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           echo "Using sdkmanager: $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          # The NDK download occasionally arrives corrupted ("Error on ZipFile
-          # unknown archive"), so retry from a clean slate.
           for attempt in 1 2 3; do
             if "$SDKMANAGER" \
                 "build-tools;${{ env.BUILD_TOOLS_VERSION }}" \
@@ -118,13 +116,25 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Build universal release APK
+      - name: Compute versionCode
         run: |
-          flutter build apk --release --split-debug-info=build/symbols
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-universal-release.apk
+          version="$(tr -d '[:space:]' < VERSION)"
+          IFS=. read -r major minor patch <<<"$version"
+          echo "VERSION_CODE=$((major * 1000000 + minor * 1000 + patch))" >> "$GITHUB_ENV"
 
-      - name: Build split-per-ABI release APKs
-        run: flutter build apk --release --split-per-abi --split-debug-info=build/symbols
+      - name: Build release APKs (universal + one per ABI)
+        run: |
+          out=build/app/outputs/flutter-apk
+          flutter build apk --release --build-number="$VERSION_CODE" --split-debug-info=build/symbols
+          mv "$out/app-release.apk" "$out/app-universal-release.apk"
+          for pair in arm64-v8a:android-arm64 armeabi-v7a:android-arm x86_64:android-x64; do
+            abi="${pair%%:*}"
+            platform="${pair##*:}"
+            flutter build apk --release --build-number="$VERSION_CODE" \
+              --target-platform "$platform" --split-debug-info=build/symbols
+            mv "$out/app-release.apk" "$out/app-$abi-release.apk"
+          done
+          ls -l "$out"
 
       - name: Strip, zipalign & sign
         if: env.HAS_KEYSTORE == 'true'
@@ -143,6 +153,7 @@ jobs:
         run: bash ./scripts/verify-apk.sh
         env:
           APK_OUTPUT_DIR: build/app/outputs/flutter-apk
+          BUILD_TOOLS_DIR: ${{ env.ANDROID_HOME }}/build-tools/${{ env.BUILD_TOOLS_VERSION }}
 
       - uses: actions/upload-artifact@v4
         if: env.HAS_KEYSTORE == 'true'
@@ -260,24 +271,59 @@ jobs:
           test -s "$dir/data/flutter_assets/assets/xray/linux/geoip.dat"
 
       - name: Bundle the Visual C++ runtime
-        # Lets the app start on a PC that has never installed the VC++
-        # redistributable.
         run: |
           dir=build/windows/x64/runner/Release
           for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
             cp "/c/Windows/System32/$dll" "$dir/" || echo "warning: $dll not found"
           done
 
-      - name: Package
+      - name: Build installer
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath dist/Pray-windows-x64.zip -Force
+          $version = (Get-Content VERSION -Raw).Trim()
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) {
+            $iscc = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "/DAppVersion=$version" windows/installer/pray.iss
+          if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
+          if (-not (Test-Path dist/Pray-windows-x64-setup.exe)) { throw "installer missing" }
+
+      - name: Test the installer (silent install, check, uninstall)
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "pray-install"
+          $p = Start-Process -FilePath dist/Pray-windows-x64-setup.exe `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOICONS","/DIR=$dir" `
+            -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
+          foreach ($f in "pray.exe","flutter_windows.dll","data\app.so","data\icudtl.dat",
+                         "data\flutter_assets\assets\xray\windows\xray.exe","unins000.exe") {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "missing after install: $f" }
+          }
+          $app = Start-Process -FilePath (Join-Path $dir "pray.exe") -PassThru
+          Start-Sleep -Seconds 8
+          if ($app.HasExited) {
+            Write-Host "::warning::pray.exe exited right after launch (code $($app.ExitCode))"
+          } else {
+            Stop-Process -Id $app.Id -Force
+          }
+          $u = Start-Process -FilePath (Join-Path $dir "unins000.exe") `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait -PassThru
+          if ($u.ExitCode -ne 0) { throw "uninstaller exited with $($u.ExitCode)" }
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: dist/Pray-windows-x64.zip
+          path: dist/Pray-windows-x64-setup.exe
           if-no-files-found: error
 
   release:
@@ -315,4 +361,4 @@ jobs:
           files: |
             artifacts/android-signed-apks/*.apk
             artifacts/linux-appimage-*/*.AppImage
-            artifacts/windows-x64/*.zip
+            artifacts/windows-x64/*.exe

@@ -76,7 +76,7 @@ abstract class UpdateChecker {
       final extension = Platform.isAndroid
           ? '.apk'
           : Platform.isWindows
-              ? '.zip'
+              ? '.exe'
               : '.appimage';
       if (key == null) return _releasePage(version);
       final release = jsonDecode(await _get(_releaseApi(version)));

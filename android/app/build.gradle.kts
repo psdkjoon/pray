@@ -29,8 +29,19 @@ android {
         versionName = flutter.versionName
 
         if (!project.hasProperty("split-per-abi")) {
+            val requested = (project.findProperty("target-platform") as String?)
+                ?.split(",")
+                ?.mapNotNull {
+                    when (it.trim()) {
+                        "android-arm" -> "armeabi-v7a"
+                        "android-arm64" -> "arm64-v8a"
+                        "android-x64" -> "x86_64"
+                        else -> null
+                    }
+                }
+                ?.takeIf { it.isNotEmpty() }
             ndk {
-                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+                abiFilters += requested ?: listOf("arm64-v8a", "armeabi-v7a", "x86_64")
             }
         }
     }

@@ -7,28 +7,50 @@ import 'package:pray/core/app_dirs.dart';
 class KvStore {
   KvStore._(this._file, this._values);
 
-  final File _file;
+  KvStore.memory() : this._(null, <String, Object?>{});
+
+  final File? _file;
   final Map<String, Object?> _values;
   Timer? _flush;
   Future<void> _writing = Future.value();
 
   static Future<KvStore> open() async {
-    final file = File('${await AppDirs.data()}/prefs.json');
-    var values = <String, Object?>{};
     try {
-      if (await file.exists()) {
-        final decoded = jsonDecode(await file.readAsString());
-        if (decoded is Map) values = Map<String, Object?>.from(decoded);
+      final file = File('${await AppDirs.data()}/prefs.json');
+      var values = <String, Object?>{};
+      try {
+        if (await file.exists()) {
+          final decoded = jsonDecode(await file.readAsString());
+          if (decoded is Map) values = Map<String, Object?>.from(decoded);
+        }
+      } on Object {
+        values = <String, Object?>{};
       }
+      return KvStore._(file, values);
     } on Object {
-      values = <String, Object?>{};
+      return KvStore.memory();
     }
-    return KvStore._(file, values);
   }
 
-  String? getString(String key) => _values[key] as String?;
-  int? getInt(String key) => _values[key] as int?;
-  bool? getBool(String key) => _values[key] as bool?;
+  String? getString(String key) {
+    final value = _values[key];
+    return value is String ? value : null;
+  }
+
+  int? getInt(String key) {
+    final value = _values[key];
+    if (value is int) return value;
+    if (value is double && value == value.truncateToDouble()) {
+      return value.toInt();
+    }
+    return null;
+  }
+
+  bool? getBool(String key) {
+    final value = _values[key];
+    return value is bool ? value : null;
+  }
+
   List<String>? getStringList(String key) {
     final value = _values[key];
     return value is List ? value.whereType<String>().toList() : null;
@@ -46,17 +68,20 @@ class KvStore {
     } else {
       _values[key] = value;
     }
+    if (_file == null) return;
     _flush?.cancel();
     _flush = Timer(const Duration(milliseconds: 150), _write);
   }
 
   void _write() {
+    final file = _file;
+    if (file == null) return;
     final snapshot = jsonEncode(_values);
     _writing = _writing.then((_) async {
       try {
-        final temp = File('${_file.path}.tmp');
+        final temp = File('${file.path}.tmp');
         await temp.writeAsString(snapshot, flush: true);
-        await temp.rename(_file.path);
+        await temp.rename(file.path);
       } on Object {
         return;
       }

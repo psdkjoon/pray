@@ -82,6 +82,9 @@ for src_apk in "$APK_OUTPUT_DIR"/app-*-release.apk; do
         --ks-key-alias "$KEY_ALIAS" \
         --ks-pass env:KEYSTORE_PASSWORD \
         --key-pass env:KEY_PASSWORD \
+        --v1-signing-enabled true \
+        --v2-signing-enabled true \
+        --v3-signing-enabled true \
         --out "$signed_apk" \
         "$aligned_apk"
 
