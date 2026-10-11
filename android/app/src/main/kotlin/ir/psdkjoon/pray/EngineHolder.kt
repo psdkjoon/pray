@@ -7,6 +7,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.net.VpnService
+import android.provider.Settings
+import androidx.core.content.FileProvider
+import java.io.File
 import android.os.Handler
 import android.os.Looper
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,6 +32,7 @@ object EngineHolder {
     private var pendingToggle = false
     private var pendingFile: MethodChannel.Result? = null
     private var pendingBytes: ByteArray? = null
+    private var pendingInstall: File? = null
 
     @Volatile
     var activity: MainActivity? = null
@@ -82,6 +86,7 @@ object EngineHolder {
         MethodChannel(messenger, "pray/system").setMethodCallHandler { call, result ->
             when (call.method) {
                 "openUrl" -> openUrl(call.argument<String>("url"), result)
+                "installApk" -> installApk(call.argument<String>("path"), result)
                 "abi" -> result.success(android.os.Build.SUPPORTED_ABIS.firstOrNull())
                 "requestNotifications" -> {
                     requestNotifications()
@@ -146,6 +151,57 @@ object EngineHolder {
         } catch (e: Exception) {
             result.error("no_browser", "No app can open this link.", null)
         }
+    }
+
+    private fun canInstall(): Boolean =
+        android.os.Build.VERSION.SDK_INT < 26 ||
+            appContext.packageManager.canRequestPackageInstalls()
+
+    private fun installApk(path: String?, result: MethodChannel.Result) {
+        val file = path?.let { File(it) }
+        if (file == null || !file.isFile) {
+            result.error("no_file", "The update file is missing.", null)
+            return
+        }
+        try {
+            if (canInstall()) {
+                pendingInstall = null
+                launchInstaller(file)
+                result.success("installing")
+            } else {
+                // Ask for "install unknown apps"; installIfWaiting() continues
+                // once the user comes back to the app.
+                pendingInstall = file
+                appContext.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:${appContext.packageName}"),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+                result.success("needs_permission")
+            }
+        } catch (e: Exception) {
+            pendingInstall = null
+            result.error("install_failed", e.message ?: "Could not start the installer.", null)
+        }
+    }
+
+    fun installIfWaiting() {
+        val file = pendingInstall ?: return
+        pendingInstall = null
+        if (!canInstall()) return
+        try {
+            launchInstaller(file)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun launchInstaller(file: File) {
+        val uri = FileProvider.getUriForFile(appContext, "${appContext.packageName}.updates", file)
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        appContext.startActivity(intent)
     }
 
     private fun requestNotifications() {

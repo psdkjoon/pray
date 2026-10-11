@@ -22,6 +22,7 @@ class MainActivity : FlutterActivity() {
         super.onPostResume()
         EngineHolder.activity = this
         EngineHolder.consentIfWaiting(this)
+        EngineHolder.installIfWaiting()
     }
 
     override fun onNewIntent(intent: Intent) {

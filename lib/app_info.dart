@@ -1,6 +1,6 @@
 abstract class AppInfo {
   static const String name = 'Pray';
-  static const String version = '1.2.2';
+  static const String version = '1.3.0';
   static const String author = 'Hossein';
   static const String githubHandle = 'psdkjoon';
   static const String githubUrl = 'https://github.com/$githubHandle';
