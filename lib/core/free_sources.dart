@@ -1,7 +1,7 @@
 
 import 'package:pray/core/http_fetch.dart';
 import 'package:pray/core/real_ping.dart';
-import 'package:xray_config/xray_config.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
 
 class ConfigSource {
   const ConfigSource({required this.name, required this.url});

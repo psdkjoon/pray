@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/core/free_sources.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Прей</string>
+    <string name="tile_off">Отключено</string>
+    <string name="tile_busy">Подключение…</string>
+    <string name="tile_on">Подключено</string>
+    <string name="vpn_channel">Служба VPN</string>
+    <string name="vpn_connected">Подключено</string>
+</resources>

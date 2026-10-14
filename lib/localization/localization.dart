@@ -2,10 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart' as w;
 import 'package:pray/localization/strings_fa.dart';
-import 'package:pray/localization/strings_id.dart';
 import 'package:pray/localization/strings_ja.dart';
 import 'package:pray/localization/strings_ru.dart';
-import 'package:pray/localization/strings_zh.dart';
 
 class Language {
   const Language(this.code, this.name, this.english);
@@ -21,10 +19,8 @@ class L10n {
   static const languages = <Language>[
     Language('en', 'English', 'English'),
     Language('fa', 'فارسی', 'Persian'),
-    Language('ru', 'Русский', 'Russian'),
-    Language('id', 'Bahasa Indonesia', 'Indonesian'),
-    Language('zh', '中文', 'Chinese'),
     Language('ja', '日本語', 'Japanese'),
+    Language('ru', 'Русский', 'Russian'),
   ];
 
   static const system = 'system';
@@ -33,10 +29,8 @@ class L10n {
 
   static const _tables = <String, Map<String, String>>{
     'fa': stringsFa,
-    'ru': stringsRu,
-    'id': stringsId,
-    'zh': stringsZh,
     'ja': stringsJa,
+    'ru': stringsRu,
   };
 
   static final _patterns = <String, List<_Pattern>>{};
@@ -53,20 +47,22 @@ class L10n {
 
   static w.Locale get locale => w.Locale(code);
 
-  static bool get rtl => code == 'fa';
+  static const _rtlCodes = {'fa', 'ar', 'he', 'ur'};
+
+  static bool get rtl => _rtlCodes.contains(code);
 
   static String tr(String text) {
     final table = _tables[code];
     if (table == null || text.isEmpty) return text;
     final exact = table[text];
     if (exact != null) return exact;
-    if (text.contains('\n\n')) {
-      return text.split('\n\n').map(tr).join('\n\n');
-    }
     const lock = ' — disconnect to change';
     if (text.endsWith(lock)) {
       final head = text.substring(0, text.length - lock.length);
       return '${tr(head)}${table[lock] ?? lock}';
+    }
+    if (text.contains('\n\n')) {
+      return text.split('\n\n').map(tr).join('\n\n');
     }
     for (final pattern in _patternsFor(table)) {
       final match = pattern.regex.firstMatch(text);
@@ -82,16 +78,16 @@ class L10n {
 
   static List<_Pattern> _patternsFor(Map<String, String> table) {
     return _patterns.putIfAbsent(code, () {
-      final list = <_Pattern>[];
-      for (final entry in table.entries) {
-        if (!entry.key.contains('{}')) continue;
-        final source = entry.key
-            .split('{}')
-            .map(RegExp.escape)
-            .join('(.+?)');
-        list.add(_Pattern(RegExp('^$source\$'), entry.value));
-      }
-      return list;
+      final keys = table.keys.where((key) => key.contains('{}')).toList()
+        ..sort((a, b) => b.replaceAll('{}', '').length -
+            a.replaceAll('{}', '').length,);
+      return [
+        for (final key in keys)
+          _Pattern(
+            RegExp('^${key.split('{}').map(RegExp.escape).join('(.+?)')}\$'),
+            table[key]!,
+          ),
+      ];
     });
   }
 

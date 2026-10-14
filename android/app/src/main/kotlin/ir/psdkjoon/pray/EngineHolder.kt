@@ -26,7 +26,7 @@ object EngineHolder {
     private val main = Handler(Looper.getMainLooper())
 
     private var engine: FlutterEngine? = null
-    private var vpnChannel: MethodChannel? = null
+    private var tileChannel: MethodChannel? = null
     private var pendingStart: MethodChannel.Result? = null
     private var awaitingConsent = false
     private var pendingToggle = false
@@ -50,18 +50,18 @@ object EngineHolder {
     }
 
     fun toggleFromTile(context: Context) {
-        val warm = engine != null
+        if (engine != null) {
+            tileChannel?.invokeMethod("toggleRequested", null)
+            return
+        }
         pendingToggle = true
         ensure(context)
-        if (warm) {
-            vpnChannel?.invokeMethod("toggleRequested", null)
-        }
     }
 
     private fun setUpChannels(e: FlutterEngine) {
         val messenger = e.dartExecutor.binaryMessenger
 
-        MethodChannel(messenger, "pray/android_paths").setMethodCallHandler { call, result ->
+        MethodChannel(messenger, "pray/paths").setMethodCallHandler { call, result ->
             when (call.method) {
                 "resolve" -> result.success(
                     mapOf(
@@ -103,8 +103,32 @@ object EngineHolder {
             }
         }
 
+        val tile = MethodChannel(messenger, "pray/tile")
+        tileChannel = tile
+        tile.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enable" -> {
+                    setTileEnabled(true)
+                    offerTile()
+                    result.success(null)
+                }
+                "setState" -> {
+                    QuickTileService.setState(
+                        appContext,
+                        call.argument<String>("state") ?: "off",
+                    )
+                    result.success(null)
+                }
+                "consumeToggle" -> {
+                    val value = pendingToggle
+                    pendingToggle = false
+                    result.success(value)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         val vpn = MethodChannel(messenger, "pray/vpn")
-        vpnChannel = vpn
         vpn.setMethodCallHandler { call, result ->
             when (call.method) {
                 "start" -> {
@@ -116,18 +140,6 @@ object EngineHolder {
                 "stop" -> {
                     stopVpn()
                     result.success(null)
-                }
-                "setConnected" -> {
-                    PrayTileService.setConnected(
-                        appContext,
-                        call.argument<String>("state") ?: "disconnected",
-                    )
-                    result.success(null)
-                }
-                "consumeToggle" -> {
-                    val value = pendingToggle
-                    pendingToggle = false
-                    result.success(value)
                 }
                 else -> result.notImplemented()
             }
@@ -169,8 +181,6 @@ object EngineHolder {
                 launchInstaller(file)
                 result.success("installing")
             } else {
-                // Ask for "install unknown apps"; installIfWaiting() continues
-                // once the user comes back to the app.
                 pendingInstall = file
                 appContext.startActivity(
                     Intent(
@@ -360,6 +370,34 @@ object EngineHolder {
     private fun stopVpn() {
         PrayVpnService.instance?.shutdown()
         appContext.stopService(Intent(appContext, PrayVpnService::class.java))
+    }
+
+    private fun setTileEnabled(enabled: Boolean) {
+        appContext.packageManager.setComponentEnabledSetting(
+            ComponentName(appContext, "ir.psdkjoon.pray.QuickTileService"),
+            if (enabled) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            },
+            PackageManager.DONT_KILL_APP,
+        )
+    }
+
+    private fun offerTile() {
+        if (android.os.Build.VERSION.SDK_INT < 33) return
+        val prefs = appContext.getSharedPreferences("pray", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("tile_offered", false)) return
+        prefs.edit().putBoolean("tile_offered", true).apply()
+        try {
+            appContext.getSystemService(android.app.StatusBarManager::class.java)?.requestAddTileService(
+                ComponentName(appContext, QuickTileService::class.java),
+                appContext.getString(R.string.app_name),
+                android.graphics.drawable.Icon.createWithResource(appContext, R.drawable.ic_tile),
+                appContext.mainExecutor,
+            ) { _: Int -> }
+        } catch (_: Exception) {
+        }
     }
 
     private fun setLauncherIcon(dark: Boolean) {

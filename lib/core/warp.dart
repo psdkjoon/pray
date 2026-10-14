@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:pray/core/crypto/x25519.dart';
-import 'package:xray_config/xray_config.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
 
 class WarpAccount {
   const WarpAccount({

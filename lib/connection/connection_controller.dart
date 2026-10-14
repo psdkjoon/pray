@@ -5,11 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:pray/core/adblock_lists.dart';
 import 'package:pray/core/xray_binary.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
 import 'package:pray/core/xray_runtime.dart';
 import 'package:pray/platform/android_vpn.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
-import 'package:xray_config/xray_config.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected }
 
@@ -23,17 +23,7 @@ class ConnectionController extends ChangeNotifier {
         _settings = settings,
         _mode = settings.tunMode ? ConnectionMode.tun : ConnectionMode.proxy {
     _runtime.onUnexpectedExit.listen((_) => _onUnexpectedExit());
-    if (Platform.isAndroid) {
-      addListener(() {
-        if (_reported == _status) return;
-        _reported = _status;
-        AndroidVpn.reportState(_status.name);
-      });
-      AndroidVpn.events.listen(_onVpnEvent);
-      AndroidVpn.consumeToggle().then((requested) {
-        if (requested) toggle();
-      });
-    }
+    if (Platform.isAndroid) AndroidVpn.events.listen(_onVpnEvent);
   }
 
   final ServersController _servers;
@@ -46,7 +36,6 @@ class ConnectionController extends ChangeNotifier {
   String? _lastError;
   Timer? _ticker;
   bool _disposed = false;
-  ConnectionStatus? _reported;
 
   ConnectionStatus get status => _status;
   Duration get elapsed => _elapsed;
@@ -210,9 +199,6 @@ class ConnectionController extends ChangeNotifier {
         if (!isConnected) return;
         _lastError = 'The VPN was turned off by Android.';
         unawaited(_disconnect());
-      case AndroidVpnEvent.toggleRequested:
-        AndroidVpn.consumeToggle();
-        toggle();
     }
   }
 

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:pray/app_info.dart';
+
 Future<String> fetchText(
   String url, {
   Duration timeout = const Duration(seconds: 25),
@@ -12,7 +14,7 @@ Future<String> fetchText(
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 12);
   try {
     final request = await client.getUrl(Uri.parse(url));
-    request.headers.set(HttpHeaders.userAgentHeader, 'pray');
+    request.headers.set(HttpHeaders.userAgentHeader, AppInfo.packageName);
     final response = await request.close().timeout(timeout);
     if (response.statusCode != 200) {
       await response.drain<void>();

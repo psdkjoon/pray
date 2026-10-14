@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart' show MethodChannel;
+import 'package:pray/app_info.dart';
 
 abstract class AppDirs {
-  static const _channel = MethodChannel('pray/android_paths');
+  static const _channel = MethodChannel('pray/paths');
   static String? _data;
 
   static Future<String> data() async {
@@ -30,7 +31,7 @@ abstract class AppDirs {
         final dir = set(paths?['filesDir']);
         if (dir != null) return [dir];
       } on Object {
-        // just not to be empty :/
+        return [];
       }
       return [];
     }
@@ -41,14 +42,14 @@ abstract class AppDirs {
           set(env['LOCALAPPDATA']),
           set(env['USERPROFILE']),
         ])
-          if (base != null) '$base\\pray',
+          if (base != null) '$base\\${AppInfo.packageName}',
       ];
     }
     final xdg = set(env['XDG_DATA_HOME']);
     final home = set(env['HOME']);
     return [
-      if (xdg != null) '$xdg/pray',
-      if (home != null) '$home/.local/share/pray',
+      if (xdg != null) '$xdg/${AppInfo.packageName}',
+      if (home != null) '$home/.local/share/${AppInfo.packageName}',
     ];
   }
 

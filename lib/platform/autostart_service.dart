@@ -23,10 +23,6 @@ abstract class AutostartService {
         : Platform.resolvedExecutable;
   }
 
-  /// Quotes [path] for the Exec key of a desktop entry. The spec applies two
-  /// escaping layers (Exec quoting, then the generic string escape), so a
-  /// literal backslash needs four backslashes and `"`, `$` and a backtick need
-  /// two. A literal `%` is written `%%`.
   static String _quoteExec(String path) {
     final out = StringBuffer('"');
     for (final rune in path.replaceAll('\n', ' ').runes) {
@@ -50,7 +46,6 @@ abstract class AutostartService {
     return out.toString();
   }
 
-  /// Returns whether the setting now matches [enabled].
   static Future<bool> setEnabled(bool enabled) async {
     try {
       if (Platform.isWindows) {

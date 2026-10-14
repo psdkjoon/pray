@@ -36,12 +36,11 @@ jobs:
         run: |
           file_version="$(tr -d '[:space:]' < VERSION)"
           app_version="$(grep -oP "version = '\K[^']+" lib/app_info.dart)"
-          echo "VERSION=$file_version app_info=$app_version"
+          pubspec_version="$(grep -oP '^version: \K[^+\s]+' pubspec.yaml)"
+          echo "VERSION=$file_version app_info=$app_version pubspec=$pubspec_version"
           test -n "$file_version"
           test "$file_version" = "$app_version"
-
-      - name: Fetch xray-core assets
-        run: bash ./scripts/fetch-xray.sh linux-64
+          test "$file_version" = "$pubspec_version"
 
       - run: flutter pub get
       - run: flutter analyze
@@ -56,6 +55,11 @@ jobs:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read app info
+        run: |
+          title="$(sed -n "s/.*static const String name = '\([^']*\)'.*/\1/p" lib/app_info.dart | head -1)"
+          echo "APP_FILE=${title// /-}" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -111,9 +115,6 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
 
-      - name: Fetch xray-core for Android
-        run: bash ./scripts/fetch-xray.sh android
-
       - run: flutter pub get
 
       - name: Compute versionCode
@@ -121,6 +122,9 @@ jobs:
           version="$(tr -d '[:space:]' < VERSION)"
           IFS=. read -r major minor patch <<<"$version"
           echo "VERSION_CODE=$((major * 1000000 + minor * 1000 + patch))" >> "$GITHUB_ENV"
+
+      - name: Fetch xray-core for Android
+        run: bash ./scripts/fetch-xray.sh android
 
       - name: Build release APKs (universal + one per ABI)
         run: |
@@ -152,6 +156,7 @@ jobs:
         if: env.HAS_KEYSTORE == 'true'
         run: bash ./scripts/verify-apk.sh
         env:
+          EXTRA_REQUIRED_LIBS: libxray.so
           APK_OUTPUT_DIR: build/app/outputs/flutter-apk
           BUILD_TOOLS_DIR: ${{ env.ANDROID_HOME }}/build-tools/${{ env.BUILD_TOOLS_VERSION }}
 
@@ -159,7 +164,7 @@ jobs:
         if: env.HAS_KEYSTORE == 'true'
         with:
           name: android-signed-apks
-          path: build/app/outputs/flutter-apk/Pray-*.apk
+          path: build/app/outputs/flutter-apk/${{ env.APP_FILE }}-*.apk
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
@@ -185,15 +190,19 @@ jobs:
         include:
           - arch: x86_64
             runner: ubuntu-22.04
-            xray: linux-64
             bundle: x64
+            xray: linux-64
           - arch: aarch64
             runner: ubuntu-22.04-arm
-            xray: linux-arm64
             bundle: arm64
+            xray: linux-arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read app info
+        run: |
+          echo "APP_NAME=$(sed -n 's/^name: *//p' pubspec.yaml | head -1 | tr -d '[:space:]')" >> "$GITHUB_ENV"
 
       - name: Install Linux desktop build deps
         run: |
@@ -222,9 +231,10 @@ jobs:
 
       - name: Check the bundle
         run: |
-          test -x build/linux/${{ matrix.bundle }}/release/bundle/pray
-          test -f build/linux/${{ matrix.bundle }}/release/bundle/data/flutter_assets/assets/xray/linux/xray
-          test -f build/linux/${{ matrix.bundle }}/release/bundle/data/flutter_assets/assets/xray/linux/geoip.dat
+          test -x "build/linux/${{ matrix.bundle }}/release/bundle/$APP_NAME"
+          test -f "build/linux/${{ matrix.bundle }}/release/bundle/lib/libapp.so"
+          test -f "build/linux/${{ matrix.bundle }}/release/bundle/data/flutter_assets/assets/xray/linux/xray"
+          test -f "build/linux/${{ matrix.bundle }}/release/bundle/data/flutter_assets/assets/xray/linux/geoip.dat"
 
       - name: Build AppImage
         run: bash ./scripts/appimage.sh
@@ -249,6 +259,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read app info
+        run: |
+          name="$(sed -n 's/^name: *//p' pubspec.yaml | head -1 | tr -d '[:space:]')"
+          title="$(sed -n "s/.*static const String name = '\([^']*\)'.*/\1/p" lib/app_info.dart | head -1)"
+          echo "APP_NAME=$name" >> "$GITHUB_ENV"
+          echo "APP_TITLE=$title" >> "$GITHUB_ENV"
+          echo "APP_FILE=${title// /-}" >> "$GITHUB_ENV"
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -264,9 +282,10 @@ jobs:
       - name: Check the bundle
         run: |
           dir=build/windows/x64/runner/Release
-          test -f "$dir/pray.exe"
+          test -f "$dir/$APP_NAME.exe"
           test -f "$dir/flutter_windows.dll"
           test -f "$dir/data/app.so"
+          test -f "$dir/data/icudtl.dat"
           test "$(wc -c < "$dir/data/flutter_assets/assets/xray/windows/xray.exe")" -gt 1000000
           test -s "$dir/data/flutter_assets/assets/xray/linux/geoip.dat"
 
@@ -293,26 +312,38 @@ jobs:
             choco install innosetup -y --no-progress
             $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           }
-          & $iscc "/DAppVersion=$version" windows/installer/pray.iss
+          $md5 = [System.Security.Cryptography.MD5]::Create()
+          $hash = $md5.ComputeHash([System.Text.Encoding]::UTF8.GetBytes("${{ github.repository }}"))
+          $guid = [System.Guid]::new($hash).ToString().ToUpper()
+          $setup = "$env:APP_FILE-windows-x64-setup"
+          & $iscc `
+            "/DAppName=$env:APP_TITLE" `
+            "/DAppExe=$env:APP_NAME.exe" `
+            "/DAppVersion=$version" `
+            "/DAppGuid=$guid" `
+            "/DAppPublisher=${{ github.repository_owner }}" `
+            "/DAppUrl=${{ github.server_url }}/${{ github.repository }}" `
+            "/DAppMutex=Local\ir.psdkjoon.pray.instance" `
+            "/DOutputBaseName=$setup" `
+            windows/installer/installer.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
-          if (-not (Test-Path dist/Pray-windows-x64-setup.exe)) { throw "installer missing" }
+          if (-not (Test-Path "dist/$setup.exe")) { throw "installer missing" }
 
       - name: Test the installer (silent install, check, uninstall)
         shell: pwsh
         run: |
-          $dir = Join-Path $env:RUNNER_TEMP "pray-install"
-          $p = Start-Process -FilePath dist/Pray-windows-x64-setup.exe `
+          $dir = Join-Path $env:RUNNER_TEMP "app-install"
+          $p = Start-Process -FilePath "dist/$env:APP_FILE-windows-x64-setup.exe" `
             -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOICONS","/DIR=$dir" `
             -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
-          foreach ($f in "pray.exe","flutter_windows.dll","data\app.so","data\icudtl.dat",
-                         "data\flutter_assets\assets\xray\windows\xray.exe","unins000.exe") {
+          foreach ($f in "$env:APP_NAME.exe","flutter_windows.dll","data\app.so","data\icudtl.dat","data\flutter_assets\assets\xray\windows\xray.exe","unins000.exe") {
             if (-not (Test-Path (Join-Path $dir $f))) { throw "missing after install: $f" }
           }
-          $app = Start-Process -FilePath (Join-Path $dir "pray.exe") -PassThru
+          $app = Start-Process -FilePath (Join-Path $dir "$env:APP_NAME.exe") -PassThru
           Start-Sleep -Seconds 8
           if ($app.HasExited) {
-            Write-Host "::warning::pray.exe exited right after launch (code $($app.ExitCode))"
+            Write-Host "::warning::$env:APP_NAME.exe exited right after launch (code $($app.ExitCode))"
           } else {
             Stop-Process -Id $app.Id -Force
           }
@@ -323,7 +354,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: dist/Pray-windows-x64-setup.exe
+          path: dist/${{ env.APP_FILE }}-windows-x64-setup.exe
           if-no-files-found: error
 
   release:
@@ -335,9 +366,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version
+      - name: Read app info
         run: |
+          title="$(sed -n "s/.*static const String name = '\([^']*\)'.*/\1/p" lib/app_info.dart | head -1)"
           version="$(tr -d '[:space:]' < VERSION)"
+          echo "APP_TITLE=$title" >> "$GITHUB_ENV"
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "TAG=v$version" >> "$GITHUB_ENV"
 
@@ -350,11 +383,18 @@ jobs:
         with:
           path: artifacts
 
+      - name: Require signed APKs
+        run: |
+          if ! ls artifacts/android-signed-apks/*.apk >/dev/null 2>&1; then
+            echo "::error::No signed APKs. Add ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD to the repository secrets."
+            exit 1
+          fi
+
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
-          name: Pray ${{ env.TAG }}
+          name: ${{ env.APP_TITLE }} ${{ env.TAG }}
           make_latest: true
           generate_release_notes: true
           fail_on_unmatched_files: true

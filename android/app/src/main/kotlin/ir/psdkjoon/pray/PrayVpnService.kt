@@ -53,8 +53,8 @@ class PrayVpnService : VpnService() {
         }
         val notification = builder
             .setSmallIcon(R.drawable.ic_tile)
-            .setContentTitle("Pray")
-            .setContentText(getString(R.string.connected))
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.vpn_connected))
             .setContentIntent(open)
             .setOngoing(true)
             .build()

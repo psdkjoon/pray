@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/connection/connection_controller.dart';
+import 'package:pray/core/dns_options.dart';
+import 'package:pray/core/geo_updater.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/autostart_service.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
-import 'package:pray/core/geo_updater.dart';
-import 'package:pray/core/dns_options.dart';
+import 'package:pray/theme/catppuccin.dart';
 import 'package:pray/ui/dns_leak_dialog.dart';
 import 'package:pray/ui/language_sheet.dart';
 import 'package:pray/ui/widgets/page_frame.dart';
@@ -68,16 +69,31 @@ class SettingsScreen extends StatelessWidget {
                             settings.themeMode = selection.first,
                       ),
                     ),
+                    _AccentTile(settings: settings),
                   ],
                 ),
+                if (L10n.languages.length > 1)
+                  SettingsSection(
+                    title: 'Language',
+                    children: [
+                      ListTile(
+                        title: const Text('Language'),
+                        subtitle: Text(_languageName(settings.language)),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => _pickLanguage(context),
+                      ),
+                    ],
+                  ),
                 SettingsSection(
-                  title: 'Language',
+                  title: 'Updates',
                   children: [
-                    ListTile(
-                      title: const Text('Language'),
-                      subtitle: Text(_languageName(settings.language)),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => _pickLanguage(context),
+                    SwitchListTile(
+                      title: const Text('Check for updates'),
+                      subtitle: const Text(
+                        'Look for a newer version when the app starts',
+                      ),
+                      value: settings.checkUpdates,
+                      onChanged: (value) => settings.checkUpdates = value,
                     ),
                   ],
                 ),
@@ -486,6 +502,90 @@ class _RingProgress extends StatelessWidget {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _AccentTile extends StatelessWidget {
+  const _AccentTile({required this.settings});
+
+  final AppSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final palette = dark ? CatppuccinPalette.mocha : CatppuccinPalette.latte;
+    return ListTile(
+      leading: const Icon(Icons.color_lens_outlined),
+      title: const Text('Accent color'),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.sm),
+        child: Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final name in CatppuccinPalette.accents)
+              _AccentDot(
+                label: '${name[0].toUpperCase()}${name.substring(1)}'.tr,
+                color: palette.accent(name),
+                selected: settings.accent == name,
+                onTap: () => settings.accent = name,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccentDot extends StatelessWidget {
+  const _AccentDot({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    const duration = Duration(milliseconds: 200);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: duration,
+          curve: Curves.easeOut,
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? scheme.onSurface : Colors.transparent,
+              width: 2.5,
+            ),
+          ),
+          child: AnimatedScale(
+            scale: selected ? 1 : 0,
+            duration: duration,
+            curve: Curves.easeOutBack,
+            child: Icon(
+              Icons.check_rounded,
+              size: 18,
+              color: scheme.surface,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

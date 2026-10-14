@@ -12,12 +12,20 @@ else
     APPIMAGETOOL_SHA256="${APPIMAGETOOL_SHA256:-}"
 fi
 
-APP_ID="ir.psdkjoon.pray"
-APP_NAME="pray"
-DESKTOP_FILE="linux/packaging/${APP_ID}.desktop"
-ICON_FILE="linux/icon.png"
+read_app_info() {
+    local root
+    root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    APP_NAME="$(grep -oP "^name: \K\S+" "$root/pubspec.yaml")"
+    APP_TITLE="$(grep -oP "static const String name = '\K[^']+" "$root/lib/app_info.dart")"
+    APP_ID="$(grep -oP 'set\(APPLICATION_ID "\K[^"]+' "$root/linux/CMakeLists.txt" || true)"
+}
 
+read_app_info
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+DESKTOP_FILE="linux/packaging/app.desktop"
+ICON_FILE="linux/icon.png"
+NO_INTEGRATE_VAR="$(printf '%s' "$APP_NAME" | tr '[:lower:]-' '[:upper:]_')_NO_INTEGRATE"
 
 run() {
     echo "\$ $*"
@@ -46,7 +54,6 @@ run cp "$ICON_FILE" "$APP_DIR/${APP_ID}.png"
 run ln -sf "${APP_ID}.png" "$APP_DIR/.DirIcon"
 
 cat > "$APP_DIR/AppRun" <<'EOF_APPRUN'
-#!/usr/bin/env bash
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "${0}")")"
 APP_ID="@APP_ID@"
@@ -58,8 +65,7 @@ APPS_DIR="$DATA_HOME/applications"
 ICONS_DIR="$DATA_HOME/icons/hicolor/256x256/apps"
 DESKTOP_PATH="$APPS_DIR/$APP_ID.desktop"
 BIN_DIR="$HOME/.local/bin"
-CLI_PATH="$BIN_DIR/$APP_NAME"   # `pray --tray` etc.
-# Created by `uninstall`, so the menu entry is not silently recreated.
+CLI_PATH="$BIN_DIR/$APP_NAME"
 OPT_OUT="$CONFIG_HOME/$APP_NAME-appimage-no-integrate"
 
 refresh_caches() {
@@ -71,7 +77,6 @@ refresh_caches() {
     fi
 }
 
-# Exec= value for an AppImage path (quoted if it contains whitespace).
 exec_line_for() {
     local target="$1"
     if [[ "$target" =~ [[:space:]] ]]; then
@@ -83,8 +88,6 @@ exec_line_for() {
     fi
 }
 
-# Writes the .desktop entry + icon so launchers (rofi, dmenu-desktop, GNOME,
-# KDE, ...) can find the app. $1 = AppImage that the entry should launch.
 write_desktop_entry() {
     local target="$1" exec_line tmp line
     exec_line="$(exec_line_for "$target")"
@@ -106,8 +109,6 @@ write_desktop_entry() {
     refresh_caches
 }
 
-# Makes `$APP_NAME` available as a command (symlink to the AppImage).
-# Never overwrites a regular file the user put there.
 link_cli() {
     local target="$1"
     mkdir -p "$BIN_DIR"
@@ -122,10 +123,9 @@ cli_is_current() {
     [[ -L "$CLI_PATH" && "$(readlink -f "$CLI_PATH" 2>/dev/null || true)" == "$1" ]]
 }
 
-# First launch (or after the AppImage was moved): register the app.
 auto_integrate() {
     [[ -n "${APPIMAGE:-}" ]] || return 0
-    [[ -z "${PRAY_NO_INTEGRATE:-}" ]] || return 0
+    [[ -z "${@NO_INTEGRATE_VAR@:-}" ]] || return 0
     [[ ! -e "$OPT_OUT" ]] || return 0
 
     local target exec_line
@@ -190,7 +190,7 @@ auto_integrate
 
 exec "$HERE/usr/bin/$APP_NAME" "$@"
 EOF_APPRUN
-sed -i -e "s|@APP_ID@|${APP_ID}|" -e "s|@APP_NAME@|${APP_NAME}|" "$APP_DIR/AppRun"
+sed -i -e "s|@APP_ID@|${APP_ID}|" -e "s|@APP_NAME@|${APP_NAME}|" -e "s|@NO_INTEGRATE_VAR@|${NO_INTEGRATE_VAR}|" "$APP_DIR/AppRun"
 chmod +x "$APP_DIR/AppRun"
 
 APPIMAGETOOL="$WORK_DIR/appimagetool.AppImage"
@@ -201,7 +201,7 @@ if [[ -n "$APPIMAGETOOL_SHA256" ]]; then
 fi
 chmod +x "$APPIMAGETOOL"
 
-OUTPUT_FILE="$OUTPUT_DIR/Pray-${ARCH}.AppImage"
+OUTPUT_FILE="$OUTPUT_DIR/${APP_TITLE// /-}-${ARCH}.AppImage"
 
 export ARCH
 run "$APPIMAGETOOL" --appimage-extract-and-run "$APP_DIR" "$OUTPUT_FILE"

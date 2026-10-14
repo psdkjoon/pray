@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Text;
-import 'package:pray/localization/localization.dart';
 import 'package:pray/core/qr/qr_code.dart';
+import 'package:pray/localization/localization.dart';
 
 class QrView extends StatelessWidget {
   const QrView({required this.data, this.size = 260, super.key});

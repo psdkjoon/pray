@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/core/warp.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/settings/app_settings.dart';
-import 'package:pray/ui/adblock_dialog.dart';
 import 'package:pray/theme/app_spacing.dart';
+import 'package:pray/ui/adblock_dialog.dart';
 import 'package:pray/ui/widgets/app_picker.dart';
 import 'package:pray/ui/widgets/page_frame.dart';
 import 'package:pray/ui/widgets/settings_section.dart';
-import 'package:xray_config/xray_config.dart';
 
 extension on RoutingPreset {
   String get label => switch (this) {

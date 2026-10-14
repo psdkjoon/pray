@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/core/pray_file.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/system_service.dart';
 import 'package:pray/servers/stored_server.dart';
 import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/ui/widgets/qr_view.dart';
-import 'package:xray_config/xray_config.dart';
 
 enum _ShareTab { link, qr, file }
 

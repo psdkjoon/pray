@@ -1,5 +1,23 @@
+#ifndef AppName
+  #define AppName "App"
+#endif
+#ifndef AppExe
+  #define AppExe "app.exe"
+#endif
 #ifndef AppVersion
   #define AppVersion "0.0.0"
+#endif
+#ifndef AppGuid
+  #define AppGuid "00000000-0000-0000-0000-000000000000"
+#endif
+#ifndef AppPublisher
+  #define AppPublisher ""
+#endif
+#ifndef AppUrl
+  #define AppUrl ""
+#endif
+#ifndef OutputBaseName
+  #define OutputBaseName "setup"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\..\build\windows\x64\runner\Release"
@@ -8,17 +26,16 @@
   #define OutputDir "..\..\dist"
 #endif
 
-#define AppName "Pray"
-#define AppExe "pray.exe"
+#define AppIdValue "{{" + AppGuid + "}"
 
 [Setup]
-AppId={{6E2C7D1A-4B53-4F0E-9A57-2D8B1C0F7A94}
+AppId={#AppIdValue}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
-AppPublisher=psdkjoon
-AppPublisherURL=https://github.com/psdkjoon
-AppSupportURL=https://github.com/psdkjoon
+AppPublisher={#AppPublisher}
+AppPublisherURL={#AppUrl}
+AppSupportURL={#AppUrl}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
@@ -26,7 +43,7 @@ UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 SetupIconFile=..\runner\resources\app_icon.ico
 OutputDir={#OutputDir}
-OutputBaseFilename=Pray-windows-x64-setup
+OutputBaseFilename={#OutputBaseName}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -35,9 +52,11 @@ PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
-AppMutex=Local\ir.psdkjoon.pray.instance
 CloseApplications=yes
 RestartApplications=no
+#ifdef AppMutex
+AppMutex={#AppMutex}
+#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -54,7 +73,7 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "Pray"; Flags: dontcreatekey uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "{#AppName}"; Flags: dontcreatekey uninsdeletevalue
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

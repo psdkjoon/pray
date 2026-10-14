@@ -8,15 +8,12 @@ const _glyphs = {
   'en': 'Aa',
   'fa': 'ف',
   'ru': 'Я',
-  'id': 'Id',
-  'zh': '文',
   'ja': 'あ',
 };
 
 const _families = {
   'fa': 'NotoSansArabic',
   'ru': 'NotoSans',
-  'zh': 'NotoSansSC',
   'ja': 'NotoSansJP',
 };
 

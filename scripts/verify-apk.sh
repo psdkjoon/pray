@@ -2,9 +2,12 @@
 set -euo pipefail
 
 : "${APK_OUTPUT_DIR:?set APK_OUTPUT_DIR}"
-APP_NAME="${APP_NAME:-Pray}"
+if [[ -z "${APP_NAME:-}" ]]; then
+    APP_NAME="$(grep -oP "static const String name = '\K[^']+" "$(dirname "${BASH_SOURCE[0]}")/../lib/app_info.dart")"
+    APP_NAME="${APP_NAME// /-}"
+fi
 BUILD_TOOLS_DIR="${BUILD_TOOLS_DIR:-}"
-REQUIRED_LIBS=(libflutter.so libapp.so libxray.so)
+REQUIRED_LIBS=(libflutter.so libapp.so ${EXTRA_REQUIRED_LIBS:-})
 
 for tool in unzip readelf; do
     command -v "$tool" >/dev/null || { echo "missing tool: $tool" >&2; exit 1; }

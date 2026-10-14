@@ -20,8 +20,6 @@ abstract class AndroidVpn {
       switch (call.method) {
         case 'revoked':
           _events.add(AndroidVpnEvent.revoked);
-        case 'toggleRequested':
-          _events.add(AndroidVpnEvent.toggleRequested);
       }
     });
   }
@@ -49,26 +47,9 @@ abstract class AndroidVpn {
     if (!Platform.isAndroid) return;
     await _channel.invokeMethod<void>('stop');
   }
-
-  static Future<void> reportState(String state) async {
-    if (!Platform.isAndroid) return;
-    try {
-      await _channel.invokeMethod<void>('setConnected', {
-        'state': state,
-      });
-    } on PlatformException {
-      return;
-    }
-  }
-
-  static Future<bool> consumeToggle() async {
-    if (!Platform.isAndroid) return false;
-    _listen();
-    return await _channel.invokeMethod<bool>('consumeToggle') ?? false;
-  }
 }
 
-enum AndroidVpnEvent { revoked, toggleRequested }
+enum AndroidVpnEvent { revoked }
 
 class AndroidApp {
   const AndroidApp({required this.package, required this.label});

@@ -25,9 +25,9 @@ class StatCard extends StatelessWidget {
 
     final caption = Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: AppSpacing.xxs,
       children: [
         Icon(icon, size: _iconSize, color: muted),
-        const SizedBox(width: AppSpacing.xxs),
         Text(label, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
       ],
     );

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:xray_config/src/base64_utils.dart';
-import 'package:xray_config/src/link_parser.dart';
-import 'package:xray_config/src/models.dart';
+import 'package:pray/core/xray_config/base64_utils.dart';
+import 'package:pray/core/xray_config/link_parser.dart';
+import 'package:pray/core/xray_config/models.dart';
 
 class SubscriptionError {
   const SubscriptionError({required this.line, required this.message});

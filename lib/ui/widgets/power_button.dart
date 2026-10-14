@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Icon;
-import 'package:pray/localization/localization.dart' show Icon, TrString;
 import 'package:pray/connection/connection_controller.dart';
+import 'package:pray/localization/localization.dart' show Icon, TrString;
 
 class PowerButton extends StatelessWidget {
   const PowerButton({

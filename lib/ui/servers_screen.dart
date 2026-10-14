@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/core/http_fetch.dart';
 import 'package:pray/core/pray_file.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/system_service.dart';
 import 'package:pray/servers/servers_controller.dart';
+import 'package:pray/servers/stored_server.dart';
 import 'package:pray/settings/app_settings.dart';
+import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/ui/free_configs_dialog.dart';
 import 'package:pray/ui/share_dialog.dart';
-import 'package:pray/servers/stored_server.dart';
-import 'package:xray_config/xray_config.dart';
-import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/ui/widgets/coming_soon.dart';
 import 'package:pray/ui/widgets/page_frame.dart';
 import 'package:pray/ui/widgets/server_tile.dart';
@@ -86,6 +86,7 @@ class _ServersScreenState extends State<ServersScreen> {
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
+          minimum: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +114,6 @@ class _ServersScreenState extends State<ServersScreen> {
                     Navigator.of(sheetContext).pop();
                   },
                 ),
-              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         );
@@ -180,7 +180,7 @@ class _ServersScreenState extends State<ServersScreen> {
             child: ListTile(
               dense: true,
               leading: Icon(Icons.select_all_rounded),
-              title: const Text('Select all'),
+              title: Text('Select all'),
             ),
           ),
           const PopupMenuItem(
@@ -188,7 +188,7 @@ class _ServersScreenState extends State<ServersScreen> {
             child: ListTile(
               dense: true,
               leading: Icon(Icons.deselect_rounded),
-              title: const Text('Deselect all'),
+              title: Text('Deselect all'),
             ),
           ),
           PopupMenuItem(
@@ -206,7 +206,7 @@ class _ServersScreenState extends State<ServersScreen> {
             child: ListTile(
               dense: true,
               leading: Icon(Icons.speed_rounded),
-              title: const Text('Test latency'),
+              title: Text('Test latency'),
             ),
           ),
         ],

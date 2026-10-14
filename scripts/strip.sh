@@ -10,7 +10,10 @@ set -euo pipefail
 : "${KEY_PASSWORD:?set KEY_PASSWORD}"
 
 PAGE_KB="${PAGE_KB:-16}"
-APP_NAME="${APP_NAME:-Pray}"
+if [[ -z "${APP_NAME:-}" ]]; then
+    APP_NAME="$(grep -oP "static const String name = '\K[^']+" "$(dirname "${BASH_SOURCE[0]}")/../lib/app_info.dart")"
+    APP_NAME="${APP_NAME// /-}"
+fi
 
 for tool in unzip zip; do
     command -v "$tool" >/dev/null || { echo "missing tool: $tool" >&2; exit 1; }

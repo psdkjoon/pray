@@ -36,6 +36,38 @@ class CatppuccinPalette {
   final Color text, subtext1, subtext0, overlay2, overlay1, overlay0;
   final Color surface2, surface1, surface0, base, mantle, crust;
 
+  static const List<String> accents = <String>[
+    'rosewater',
+    'flamingo',
+    'pink',
+    'mauve',
+    'red',
+    'peach',
+    'yellow',
+    'green',
+    'teal',
+    'sky',
+    'blue',
+    'lavender',
+  ];
+
+  static const String defaultAccent = 'mauve';
+
+  Color accent(String name) => switch (name) {
+        'rosewater' => rosewater,
+        'flamingo' => flamingo,
+        'pink' => pink,
+        'red' => red,
+        'peach' => peach,
+        'yellow' => yellow,
+        'green' => green,
+        'teal' => teal,
+        'sky' => sky,
+        'blue' => blue,
+        'lavender' => lavender,
+        _ => mauve,
+      };
+
   static const mocha = CatppuccinPalette(
     rosewater: Color(0xFFF5E0DC),
     flamingo: Color(0xFFF2CDCD),

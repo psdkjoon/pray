@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:pray/core/xray_binary.dart';
-import 'package:xray_config/xray_config.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
 
 class RealPing {
   RealPing._(this._install);

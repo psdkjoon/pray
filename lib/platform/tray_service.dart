@@ -6,8 +6,8 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/app_info.dart';
-import 'package:pray/localization/localization.dart';
 import 'package:pray/connection/connection_controller.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/app_icon.dart';
 import 'package:pray/platform/window_service.dart';
 import 'package:pray/settings/app_settings.dart';
@@ -144,8 +144,6 @@ class TrayService with WidgetsBindingObserver {
     return data!.buffer.asUint8List();
   }
 
-  /// Arguments describing the icon for the native side: a PNG file on Linux,
-  /// raw pixels on Windows.
   Future<Map<String, Object>> _iconArgs(bool dark) async {
     if (Platform.isWindows) {
       final bytes = await rootBundle.load(

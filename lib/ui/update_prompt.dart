@@ -7,12 +7,14 @@ import 'package:pray/core/update_checker.dart';
 import 'package:pray/core/update_installer.dart';
 import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/system_service.dart';
+import 'package:pray/settings/app_settings.dart';
+import 'package:pray/theme/app_spacing.dart';
 
 abstract class UpdatePrompt {
   static bool _started = false;
 
-  static void run(BuildContext context) {
-    if (_started) return;
+  static void run(BuildContext context, AppSettings settings) {
+    if (_started || !settings.checkUpdates) return;
     _started = true;
     unawaited(_check(context));
   }
@@ -78,12 +80,10 @@ abstract class UpdatePrompt {
               builder: (_, value, __) => Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: AppSpacing.sm,
                 children: [
                   LinearProgressIndicator(value: value),
-                  if (value != null) ...[
-                    const SizedBox(height: 8),
-                    Text('${(value * 100).round()}%'),
-                  ],
+                  if (value != null) Text('${(value * 100).round()}%'),
                 ],
               ),
             ),
@@ -104,7 +104,10 @@ abstract class UpdatePrompt {
     String? path;
     var failed = false;
     try {
-      path = await download.run(info.url, onProgress: (v) => progress.value = v);
+      path = await download.run(
+        info.url,
+        onProgress: (v) => progress.value = v,
+      );
     } on UpdateCancelled {
       return;
     } on Object {
@@ -129,7 +132,7 @@ abstract class UpdatePrompt {
       if (!opened) {
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('Allow Pray to install apps, then come back to continue.'),
+            content: Text('Allow ${AppInfo.name} to install apps, then come back to continue.'),
             duration: Duration(seconds: 6),
           ),
         );

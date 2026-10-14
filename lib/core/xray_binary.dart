@@ -246,7 +246,6 @@ abstract class _WindowsXrayBinary {
       await file.writeAsBytes(bytes, flush: true);
       return true;
     } on FileSystemException {
-      // Most likely xray.exe is still running from a previous session.
       return await file.exists();
     }
   }
@@ -258,8 +257,6 @@ abstract class _WindowsXrayBinary {
     final binary = await rootBundle.load(_binaryAsset);
     final bytes =
         binary.buffer.asUint8List(binary.offsetInBytes, binary.lengthInBytes);
-    // The placeholder shipped in non-Windows builds is empty, and a real
-    // xray.exe is several megabytes. "MZ" is the PE header magic.
     if (bytes.length < 1024 * 1024 || bytes[0] != 0x4d || bytes[1] != 0x5a) {
       throw StateError(
         'This build has no bundled xray. Run scripts/fetch-xray.sh '

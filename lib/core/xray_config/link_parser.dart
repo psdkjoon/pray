@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:xray_config/src/base64_utils.dart';
-import 'package:xray_config/src/models.dart';
+import 'package:pray/core/xray_config/base64_utils.dart';
+import 'package:pray/core/xray_config/models.dart';
 
 const supportedSchemes = {'vless', 'vmess', 'trojan', 'ss'};
 

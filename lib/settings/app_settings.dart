@@ -1,12 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:pray/connection/proxy_endpoint.dart';
-import 'package:xray_config/xray_config.dart';
 import 'package:pray/core/adblock_lists.dart';
 import 'package:pray/core/dns_options.dart';
 import 'package:pray/core/kv_store.dart';
 import 'package:pray/core/warp.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
 import 'package:pray/localization/localization.dart';
-import 'dart:convert';
+import 'package:pray/theme/catppuccin.dart';
 
 enum RoutingPreset { global, bypassLan, bypassIran }
 
@@ -31,6 +33,11 @@ class AppSettings extends ChangeNotifier {
     _fakeDns = prefs.getBool('fakeDns') ?? false;
     _language = prefs.getString('language') ?? L10n.system;
     L10n.code = L10n.resolve(_language);
+    _checkUpdates = prefs.getBool('checkUpdates') ?? _checkUpdates;
+    final accent = prefs.getString('accent');
+    if (accent != null && CatppuccinPalette.accents.contains(accent)) {
+      _accent = accent;
+    }
     _proxyPort = prefs.getInt('proxyPort') ?? _proxyPort;
     _allowLan = prefs.getBool('allowLan') ?? _allowLan;
     _connectOnLaunch = prefs.getBool('connectOnLaunch') ?? _connectOnLaunch;
@@ -91,6 +98,8 @@ class AppSettings extends ChangeNotifier {
   bool _fakeDns = false;
   String _language = L10n.system;
   ThemeMode _themeMode = ThemeMode.system;
+  bool _checkUpdates = true;
+  String _accent = CatppuccinPalette.defaultAccent;
   int _proxyPort = ProxyEndpoint.defaultPort;
   bool _allowLan = false;
   bool _connectOnLaunch = false;
@@ -137,8 +146,11 @@ class AppSettings extends ChangeNotifier {
     _prefs.setString('dnsCustom', custom);
     notifyListeners();
   }
+
   String get language => _language;
   ThemeMode get themeMode => _themeMode;
+  bool get checkUpdates => _checkUpdates;
+  String get accent => _accent;
   int get proxyPort => _proxyPort;
   bool get allowLan => _allowLan;
   bool get connectOnLaunch => _connectOnLaunch;
@@ -190,6 +202,9 @@ class AppSettings extends ChangeNotifier {
 
   set themeMode(ThemeMode value) =>
       _set(() => _themeMode = value, 'themeMode', value.name);
+  set checkUpdates(bool value) =>
+      _set(() => _checkUpdates = value, 'checkUpdates', value);
+  set accent(String value) => _set(() => _accent = value, 'accent', value);
   set proxyPort(int value) =>
       _set(() => _proxyPort = value, 'proxyPort', value);
   set allowLan(bool value) => _set(() => _allowLan = value, 'allowLan', value);
@@ -235,6 +250,7 @@ class AppSettings extends ChangeNotifier {
       _prefs.setStringList('freeSources', value);
     }
   }
+
   set perAppProxy(bool value) =>
       _set(() => _perAppProxy = value, 'perAppProxy', value);
   set tunMode(bool value) => _set(() => _tunMode = value, 'tunMode', value);

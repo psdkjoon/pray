@@ -6,7 +6,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 
-class PrayTileService : TileService() {
+class QuickTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
@@ -21,20 +21,20 @@ class PrayTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        state = if (state == "disconnected") "connecting" else "disconnected"
+        state = if (state == "off") "busy" else "off"
         render()
         EngineHolder.toggleFromTile(applicationContext)
     }
 
     private fun render() {
         val tile = qsTile ?: return
-        tile.state = if (state == "disconnected") Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
-        tile.label = "Pray"
+        tile.state = if (state == "off") Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
+        tile.label = getString(R.string.app_name)
         if (Build.VERSION.SDK_INT >= 29) {
             tile.subtitle = when (state) {
-                "connecting" -> getString(R.string.connecting)
-                "connected" -> getString(R.string.connected)
-                else -> getString(R.string.disconnected)
+                "busy" -> getString(R.string.tile_busy)
+                "on" -> getString(R.string.tile_on)
+                else -> getString(R.string.tile_off)
             }
         }
         tile.updateTile()
@@ -42,12 +42,12 @@ class PrayTileService : TileService() {
 
     companion object {
         @Volatile
-        private var state = "disconnected"
+        private var state = "off"
 
         @Volatile
-        private var live: PrayTileService? = null
+        private var live: QuickTileService? = null
 
-        fun setConnected(context: Context, value: String) {
+        fun setState(context: Context, value: String) {
             state = value
             val current = live
             if (current != null) {
@@ -55,7 +55,7 @@ class PrayTileService : TileService() {
             } else {
                 requestListeningState(
                     context,
-                    ComponentName(context, PrayTileService::class.java),
+                    ComponentName(context, QuickTileService::class.java),
                 )
             }
         }

@@ -1,10 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
-import 'package:pray/platform/system_service.dart';
 import 'package:pray/app_info.dart';
+import 'package:pray/localization/localization.dart';
+import 'package:pray/platform/app_icon.dart';
+import 'package:pray/platform/system_service.dart';
 import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/theme/app_theme.dart';
 import 'package:pray/ui/widgets/page_frame.dart';
@@ -18,9 +19,7 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final heart = theme.extension<StatusColors>()!.heart;
-    final logoAsset = theme.brightness == Brightness.dark
-        ? 'assets/icons/logo_mocha.png'
-        : 'assets/icons/logo_latte.png';
+    final logoAsset = AppIcon.logo(theme.brightness);
 
     return PageFrame(
       child: SingleChildScrollView(
@@ -56,8 +55,8 @@ class AboutScreen extends StatelessWidget {
                 _LinkTile(
                   icon: Icons.code_rounded,
                   title: 'GitHub',
-                  display: AppInfo.githubDisplay,
-                  url: AppInfo.githubUrl,
+                  display: AppInfo.repoDisplay,
+                  url: AppInfo.repoUrl,
                 ),
                 _LinkTile(
                   icon: Icons.send_rounded,
@@ -240,8 +239,7 @@ const _sources = <_Source>[
   _Source('Catppuccin', 'The Mocha and Latte palettes', 78, 0.17, 0.64, 3.4),
   _Source('Space Grotesk', 'The typeface, under the SIL Open Font License', 66, 0.85, 0.54, 4.2),
   _Source('Noto Sans', 'Latin and Cyrillic text, under the SIL Open Font License', 58, 0.31, 0.87, 5.0),
-  _Source('Noto Sans Arabic', 'Persian text, under the SIL Open Font License', 54, 0.62, 0.87, 0.7),
-  _Source('Noto Sans SC', 'Chinese text, under the SIL Open Font License', 46, 0.90, 0.86, 2.8),
+  _Source('Noto Sans Arabic', 'Arabic script text, under the SIL Open Font License', 54, 0.62, 0.87, 0.7),
   _Source('Noto Sans JP', 'Japanese text, under the SIL Open Font License', 46, 0.10, 0.38, 3.9),
 ];
 
@@ -374,7 +372,7 @@ class _SourcesFieldState extends State<_SourcesField>
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                s.name.replaceFirst('Noto Sans ', 'Noto Sans\n'),
+                s.name.tr.replaceFirst('Noto Sans ', 'Noto Sans\n'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurface,

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Icon, Text;
+import 'package:pray/localization/localization.dart';
 import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/theme/app_text_style.dart';
 import 'package:pray/theme/catppuccin.dart';
@@ -6,19 +7,19 @@ import 'package:pray/theme/catppuccin.dart';
 @immutable
 class StatusColors extends ThemeExtension<StatusColors> {
   const StatusColors({
-    required this.connected,
+    required this.success,
     required this.warning,
     required this.heart,
   });
 
-  final Color connected;
+  final Color success;
   final Color warning;
   final Color heart;
 
   @override
-  StatusColors copyWith({Color? connected, Color? warning, Color? heart}) {
+  StatusColors copyWith({Color? success, Color? warning, Color? heart}) {
     return StatusColors(
-      connected: connected ?? this.connected,
+      success: success ?? this.success,
       warning: warning ?? this.warning,
       heart: heart ?? this.heart,
     );
@@ -28,7 +29,7 @@ class StatusColors extends ThemeExtension<StatusColors> {
   StatusColors lerp(StatusColors? other, double t) {
     if (other == null) return this;
     return StatusColors(
-      connected: Color.lerp(connected, other.connected, t)!,
+      success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       heart: Color.lerp(heart, other.heart, t)!,
     );
@@ -36,25 +37,37 @@ class StatusColors extends ThemeExtension<StatusColors> {
 }
 
 abstract class AppTheme {
-  static ThemeData get light =>
-      _build(CatppuccinPalette.latte, Brightness.light);
-  static ThemeData get dark =>
-      _build(CatppuccinPalette.mocha, Brightness.dark);
+  static final Map<String, ThemeData> _cache = <String, ThemeData>{};
 
-  static ThemeData _build(CatppuccinPalette c, Brightness brightness) {
+  static ThemeData light(String accent) => _cache.putIfAbsent(
+        'light:${L10n.code}:$accent',
+        () => _build(CatppuccinPalette.latte, Brightness.light, accent),
+      );
+
+  static ThemeData dark(String accent) => _cache.putIfAbsent(
+        'dark:${L10n.code}:$accent',
+        () => _build(CatppuccinPalette.mocha, Brightness.dark, accent),
+      );
+
+  static ThemeData _build(
+    CatppuccinPalette c,
+    Brightness brightness,
+    String accentName,
+  ) {
     final isDark = brightness == Brightness.dark;
+    final accent = c.accent(accentName);
     final onAccent = isDark ? c.crust : c.base;
 
     final scheme = ColorScheme(
       brightness: brightness,
-      primary: c.mauve,
+      primary: accent,
       onPrimary: onAccent,
       primaryContainer: c.surface0,
-      onPrimaryContainer: c.mauve,
+      onPrimaryContainer: accent,
       secondary: c.blue,
       onSecondary: onAccent,
-      secondaryContainer: Color.alphaBlend(c.mauve.withValues(alpha: 0.16), c.mantle),
-      onSecondaryContainer: c.mauve,
+      secondaryContainer: Color.alphaBlend(accent.withValues(alpha: 0.16), c.mantle),
+      onSecondaryContainer: accent,
       tertiary: c.peach,
       onTertiary: onAccent,
       error: c.red,
@@ -78,7 +91,7 @@ abstract class AppTheme {
       fontFamily: AppTextStyle.fontFamily,
       fontFamilyFallback: AppTextStyle.fontFallback,
       textTheme: AppTextStyle.textTheme,
-      extensions: [StatusColors(connected: c.green, warning: c.peach, heart: c.pink)],
+      extensions: [StatusColors(success: c.green, warning: c.peach, heart: c.pink)],
       cardTheme: CardThemeData(
         color: scheme.surfaceContainerLow,
         elevation: 0,

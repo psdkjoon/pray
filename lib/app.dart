@@ -1,16 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:pray/localization/localization.dart';
 import 'package:pray/app_info.dart';
 import 'package:pray/connection/connection_controller.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_theme.dart';
 import 'package:pray/ui/app_shell.dart';
 
-class PRayApp extends StatelessWidget {
-  const PRayApp({
+class PrayApp extends StatelessWidget {
+  const PrayApp({
     required this.settings,
     required this.servers,
     required this.connection,
@@ -27,10 +27,10 @@ class PRayApp extends StatelessWidget {
       listenable: settings,
       builder: (context, _) {
         return MaterialApp(
-          title: AppInfo.name,
+          onGenerateTitle: (_) => AppInfo.name.tr,
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
+          theme: AppTheme.light(settings.accent),
+          darkTheme: AppTheme.dark(settings.accent),
           themeMode: settings.themeMode,
           scrollBehavior: const _NoScrollbarBehavior(),
           locale: L10n.locale,

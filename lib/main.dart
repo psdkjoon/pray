@@ -4,15 +4,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/app.dart';
+import 'package:pray/app_info.dart';
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/core/kv_store.dart';
 import 'package:pray/core/startup_log.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/autostart_service.dart';
 import 'package:pray/platform/launcher_icon_service.dart';
 import 'package:pray/platform/notification_service.dart';
+import 'package:pray/platform/quick_tile_service.dart';
 import 'package:pray/platform/tray_service.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
+import 'package:pray/ui/startup_failure_screen.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(_start, (error, stack) {
@@ -38,13 +42,11 @@ Future<void> _start() async {
     connection = ConnectionController(servers: servers, settings: settings);
   } on Object catch (error, stack) {
     await StartupLog.write(error, stack);
-    runApp(_StartupFailure(error: error, logPath: StartupLog.lastPath));
+    runApp(StartupFailureScreen(error: error, logPath: StartupLog.lastPath));
     return;
   }
 
-  runApp(
-    PRayApp(settings: settings, servers: servers, connection: connection),
-  );
+  runApp(PrayApp(settings: settings, servers: servers, connection: connection));
 
   unawaited(_initPlatform(settings, servers, connection));
 }
@@ -71,11 +73,23 @@ Future<void> _initPlatform(
       debugPrint('edge-to-edge unavailable');
     }
 
-    LauncherIconService.init(settings, connection);
+    LauncherIconService.init(
+      settings,
+      refreshOn: connection,
+      canApply: () => connection.status == ConnectionStatus.disconnected,
+    );
 
-    NotificationService.follow(connection);
+    NotificationService.follow<ConnectionStatus>(
+      connection,
+      () => connection.status,
+      _connectionNotification,
+    );
 
     final tasks = <Future<void>>[];
+
+    if (Platform.isAndroid) {
+      tasks.add(_initTile(connection));
+    }
 
     if (Platform.isLinux || Platform.isWindows) {
       tasks.add(() async {
@@ -98,43 +112,39 @@ Future<void> _initPlatform(
   }
 }
 
-class _StartupFailure extends StatelessWidget {
-  const _StartupFailure({required this.error, required this.logPath});
+Future<void> _initTile(ConnectionController connection) async {
+  await QuickTileService.init(connection.toggle);
+  await QuickTileService.enable();
+  var last = _tileState(connection.status);
+  await QuickTileService.setState(last);
+  connection.addListener(() {
+    final current = _tileState(connection.status);
+    if (current == last) return;
+    last = current;
+    unawaited(QuickTileService.setState(current));
+  });
+}
 
-  final Object error;
-  final String? logPath;
+TileState _tileState(ConnectionStatus status) => switch (status) {
+      ConnectionStatus.disconnected => TileState.off,
+      ConnectionStatus.connecting => TileState.busy,
+      ConnectionStatus.connected => TileState.on,
+    };
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pray could not start',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      '$error'
-                      '${logPath == null ? '' : '\n\nDetails were saved to:\n$logPath'}'
-                      '\n\nPlease report this at github.com/psdkjoon.',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+NotificationMessage? _connectionNotification(
+  ConnectionStatus previous,
+  ConnectionStatus current,
+) {
+  if (Platform.isAndroid) return null;
+  return switch (current) {
+    ConnectionStatus.connected => (
+        title: '${AppInfo.name} is connected'.tr,
+        body: 'Your traffic is routed through the proxy.'.tr,
       ),
-    );
-  }
+    ConnectionStatus.disconnected when previous == ConnectionStatus.connected => (
+        title: '${AppInfo.name} is disconnected'.tr,
+        body: 'Your traffic is going directly.'.tr,
+      ),
+    _ => null,
+  };
 }

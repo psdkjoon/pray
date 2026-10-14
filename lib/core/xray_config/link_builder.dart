@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:xray_config/src/models.dart';
+import 'package:pray/core/xray_config/models.dart';
 
 String buildLink(ProxyServer s) {
   return switch (s.protocol) {

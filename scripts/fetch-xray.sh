@@ -21,8 +21,6 @@ else
     PROGRESS=(-sS)
 fi
 
-# unzip is missing on some Windows (Git Bash) setups, so fall back to tools
-# that ship with Windows.
 extract_zip() {
     local zip="$1" dest="$2"
     if command -v unzip >/dev/null 2>&1; then
@@ -38,8 +36,6 @@ extract_zip() {
     fi
 }
 
-# Every platform's asset list is in pubspec.yaml, so the files that belong to
-# other platforms must exist too (empty placeholders are fine).
 ensure_placeholders() {
     mkdir -p assets/xray/linux assets/xray/windows
     [[ -e assets/xray/linux/xray ]] || : > assets/xray/linux/xray
@@ -93,7 +89,6 @@ install_windows() {
     dir="$(fetch "$asset" | tail -n1)"
     ensure_placeholders
     install -m 755 "$dir/xray.exe" assets/xray/windows/xray.exe
-    # The geo data is shared with the other platforms.
     install -m 644 "$dir/geoip.dat" assets/xray/linux/geoip.dat
     install -m 644 "$dir/geosite.dat" assets/xray/linux/geosite.dat
 }

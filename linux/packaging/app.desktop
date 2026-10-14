@@ -1,7 +1,10 @@
 [Desktop Entry]
 Type=Application
 Name=Pray
-Comment=A Catppuccin-themed Xray client
+Name[fa]=پری
+Name[ja]=プレイ
+Name[ru]=Прей
+Comment=psdkRay: a Catppuccin-themed Xray client for Android, Linux and Windows.
 Exec=pray
 Icon=ir.psdkjoon.pray
 Terminal=false

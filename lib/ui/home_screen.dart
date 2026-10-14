@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text;
-import 'package:pray/localization/localization.dart';
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/connection/proxy_endpoint.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/servers/stored_server.dart';
 import 'package:pray/settings/app_settings.dart';
@@ -112,40 +112,52 @@ class _Hero extends StatelessWidget {
             onPressed: controller.toggle,
           ),
         ),
-        Text(title, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.xxs),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: AppSpacing.xxs,
+          children: [
+            Text(title, style: theme.textTheme.titleLarge),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
         if (controller.status == ConnectionStatus.disconnected &&
             controller.lastError != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: SelectableText(
-              controller.lastError!.tr,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.error),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: SelectableText(
+                controller.lastError!.tr,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.error),
+              ),
             ),
           ),
         ],
         if (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.windows) ...[
-        const SizedBox(height: AppSpacing.lg),
-        SegmentedButton<ConnectionMode>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: ConnectionMode.proxy, label: Text('Proxy')),
-            ButtonSegment(value: ConnectionMode.tun, label: Text('TUN')),
-          ],
-          selected: {controller.mode},
-          onSelectionChanged: controller.canChangeMode
-              ? (selection) => controller.setMode(selection.first)
-              : null,
-        ),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.lg),
+            child: SegmentedButton<ConnectionMode>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: ConnectionMode.proxy,
+                  label: Text('Proxy'),
+                ),
+                ButtonSegment(value: ConnectionMode.tun, label: Text('TUN')),
+              ],
+              selected: {controller.mode},
+              onSelectionChanged: controller.canChangeMode
+                  ? (selection) => controller.setMode(selection.first)
+                  : null,
+            ),
+          ),
         ],
       ],
     );

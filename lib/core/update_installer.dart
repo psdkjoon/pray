@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:pray/app_info.dart';
 import 'package:pray/core/app_dirs.dart';
 
 class UpdateCancelled implements Exception {
@@ -10,7 +11,6 @@ class UpdateCancelled implements Exception {
   String toString() => 'Update download cancelled.';
 }
 
-/// Downloads an update APK into the app's private storage.
 class UpdateDownload {
   HttpClient? _client;
   bool _cancelled = false;
@@ -18,7 +18,6 @@ class UpdateDownload {
   static Future<Directory> _dir() async =>
       Directory('${await AppDirs.data()}/updates');
 
-  /// Removes any APK left over from a previous download.
   static Future<void> cleanup() async {
     try {
       final dir = await _dir();
@@ -33,17 +32,15 @@ class UpdateDownload {
     _client?.close(force: true);
   }
 
-  /// Returns the path of the downloaded APK. [onProgress] gets 0..1, or null
-  /// when the server did not say how big the file is.
   Future<String> run(String url, {required void Function(double?) onProgress}) async {
     await cleanup();
     final dir = await _dir();
     await dir.create(recursive: true);
-    final part = File('${dir.path}/pray-update.apk.part');
-    final target = File('${dir.path}/pray-update.apk');
+    final part = File('${dir.path}/update.apk.part');
+    final target = File('${dir.path}/update.apk');
     final client = _client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 15)
-      ..userAgent = 'pray-update-download';
+      ..userAgent = '${AppInfo.packageName}-update-download';
     IOSink? sink;
     try {
       final request = await client.getUrl(Uri.parse(url));
@@ -78,9 +75,7 @@ class UpdateDownload {
       try {
         await sink?.close();
         if (await part.exists()) await part.delete();
-      } on Object {
-        // best effort
-      }
+      } on Object catch (_) {}
     }
   }
 }

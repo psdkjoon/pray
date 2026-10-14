@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:pray/core/adblock_lists.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
 
@@ -141,13 +141,15 @@ class _AdListsDialogState extends State<_AdListsDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Turn on the lists you want, then download them. Every domain '
-                'in an enabled list is blocked while Pray is connected. '
-                'More lists block more, but can break some sites and apps.',
-                style: theme.textTheme.bodyMedium,
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: Text(
+                  'Turn on the lists you want, then download them. Every domain '
+                  'in an enabled list is blocked while Pray is connected. '
+                  'More lists block more, but can break some sites and apps.',
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
-              const SizedBox(height: AppSpacing.md),
               for (final list in _lists)
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,

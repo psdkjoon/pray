@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">پری</string>
+    <string name="tile_off">قطع شده</string>
+    <string name="tile_busy">در حال اتصال…</string>
+    <string name="tile_on">متصل</string>
+    <string name="vpn_channel">سرویس VPN</string>
+    <string name="vpn_connected">متصل</string>
+</resources>

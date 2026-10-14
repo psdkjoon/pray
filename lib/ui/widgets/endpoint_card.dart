@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide Text, Icon;
-import 'package:pray/localization/localization.dart';
 import 'package:flutter/services.dart';
+import 'package:pray/localization/localization.dart';
 import 'package:pray/theme/app_spacing.dart';
 
 class EndpointCard extends StatelessWidget {

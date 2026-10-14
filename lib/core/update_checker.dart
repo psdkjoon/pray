@@ -14,49 +14,32 @@ class UpdateInfo {
 
 abstract class UpdateChecker {
   static const _versionUrl =
-      'https://raw.githubusercontent.com/${AppInfo.githubHandle}/pray/main/VERSION';
+      'https://raw.githubusercontent.com/${AppInfo.githubHandle}/${AppInfo.repoName}/main/VERSION';
+
   static String _releaseApi(String version) =>
-      'https://api.github.com/repos/${AppInfo.githubHandle}/pray/releases/tags/v$version';
+      'https://api.github.com/repos/${AppInfo.githubHandle}/${AppInfo.repoName}/releases/tags/v$version';
+
   static String _releasePage(String version) =>
-      'https://github.com/${AppInfo.githubHandle}/pray/releases/tag/v$version';
+      '${AppInfo.repoUrl}/releases/tag/v$version';
 
   static Future<UpdateInfo?> check() async {
     try {
       final raw = (await _get(_versionUrl)).trim().split(RegExp(r'\s')).first;
       final remote = raw.replaceFirst(RegExp('^[vV]'), '');
-      if (!_newer(remote, AppInfo.version)) return null;
+      if (!isNewer(remote, AppInfo.version)) return null;
       return UpdateInfo(version: remote, url: await _downloadUrl(remote));
     } on Object {
       return null;
     }
   }
 
-  static Future<String> _get(String url) async {
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 8)
-      ..userAgent = 'pray-update-check';
-    try {
-      final request = await client
-          .getUrl(Uri.parse(url))
-          .timeout(const Duration(seconds: 8));
-      request.headers.set('Accept', 'application/vnd.github+json, text/plain');
-      final response = await request.close().timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) {
-        await response.drain<void>();
-        throw HttpException('status ${response.statusCode}');
-      }
-      return await response
-          .transform(utf8.decoder)
-          .join()
-          .timeout(const Duration(seconds: 15));
-    } finally {
-      client.close(force: true);
-    }
-  }
-
-  static bool _newer(String remote, String local) {
+  static bool isNewer(String remote, String local) {
     List<int> parts(String v) => [
-          for (final p in v.replaceFirst(RegExp('^[vV]'), '').split(RegExp(r'[+-]')).first.split('.'))
+          for (final p in v
+              .replaceFirst(RegExp('^[vV]'), '')
+              .split(RegExp(r'[+-]'))
+              .first
+              .split('.'))
             int.tryParse(p) ?? 0,
         ];
     final a = parts(remote);
@@ -70,6 +53,30 @@ abstract class UpdateChecker {
     return false;
   }
 
+  static Future<String> _get(String url) async {
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8)
+      ..userAgent = '${AppInfo.packageName}-update-check';
+    try {
+      final request = await client
+          .getUrl(Uri.parse(url))
+          .timeout(const Duration(seconds: 8));
+      request.headers.set('Accept', 'application/vnd.github+json, text/plain');
+      final response =
+          await request.close().timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        await response.drain<void>();
+        throw HttpException('status ${response.statusCode}');
+      }
+      return await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(const Duration(seconds: 15));
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   static Future<String> _downloadUrl(String version) async {
     try {
       final key = await _deviceKey();
@@ -80,12 +87,13 @@ abstract class UpdateChecker {
               : '.appimage';
       if (key == null) return _releasePage(version);
       final release = jsonDecode(await _get(_releaseApi(version)));
-      final assets = (release as Map)['assets'] as List;
+      final assets = (release as Map<String, Object?>)['assets'] as List<Object?>;
       for (final wanted in [key, if (Platform.isAndroid) 'universal']) {
         for (final asset in assets) {
-          final name = '${(asset as Map)['name']}'.toLowerCase();
+          final map = asset as Map<String, Object?>;
+          final name = '${map['name']}'.toLowerCase();
           if (name.endsWith(extension) && name.contains(wanted)) {
-            return '${asset['browser_download_url']}';
+            return '${map['browser_download_url']}';
           }
         }
       }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:xray_config/src/models.dart';
+import 'package:pray/core/xray_config/models.dart';
 
 enum RoutingProfile { global, bypassLan, bypassIran }
 

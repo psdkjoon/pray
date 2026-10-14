@@ -18,7 +18,7 @@ class PingPill extends StatelessWidget {
     final color = switch (ms) {
       null => theme.colorScheme.outline,
       final value when value >= _slowMs => status.warning,
-      _ => status.connected,
+      _ => status.success,
     };
 
     return DecoratedBox(

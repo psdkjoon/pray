@@ -40,9 +40,6 @@ abstract class SystemService {
     }
   }
 
-  /// Hands a downloaded APK to Android's installer. Returns `true` when the
-  /// install screen was opened, `false` when the user first has to allow
-  /// installs from this app (the install continues once they come back).
   static Future<bool> installApk(String path) async {
     final status = await _channel.invokeMethod<String>('installApk', {'path': path});
     return status == 'installing';

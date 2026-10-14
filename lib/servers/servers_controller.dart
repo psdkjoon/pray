@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:pray/servers/stored_server.dart';
 import 'package:pray/core/kv_store.dart';
 import 'package:pray/core/real_ping.dart';
-import 'package:xray_config/xray_config.dart';
+import 'package:pray/core/xray_config/xray_config.dart';
+import 'package:pray/servers/stored_server.dart';
 
 enum ServerSort {
   added('Oldest first'),

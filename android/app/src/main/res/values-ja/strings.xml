@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">プレイ</string>
+    <string name="tile_off">未接続</string>
+    <string name="tile_busy">接続中…</string>
+    <string name="tile_on">接続済み</string>
+    <string name="vpn_channel">VPN サービス</string>
+    <string name="vpn_connected">接続済み</string>
+</resources>
