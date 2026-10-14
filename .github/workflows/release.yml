@@ -42,6 +42,11 @@ jobs:
           test "$file_version" = "$app_version"
           test "$file_version" = "$pubspec_version"
 
+      - name: Create xray asset placeholders
+        run: |
+          mkdir -p assets/xray/linux assets/xray/windows
+          touch assets/xray/linux/xray assets/xray/linux/geoip.dat assets/xray/linux/geosite.dat assets/xray/windows/xray.exe
+
       - run: flutter pub get
       - run: flutter analyze
       - name: Test
