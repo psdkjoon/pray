@@ -289,7 +289,7 @@ abstract class _WindowsXrayBinary {
 }
 
 abstract class _AndroidXrayBinary {
-  static const _channel = MethodChannel('pray/android_paths');
+  static const _channel = MethodChannel('pray/paths');
 
   static Future<XrayInstall> resolve() async {
     final paths = await _channel.invokeMapMethod<String, String>('resolve');
