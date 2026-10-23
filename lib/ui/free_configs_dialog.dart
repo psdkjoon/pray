@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Text, Icon;
 import 'package:flutter/services.dart';
 import 'package:pray/core/free_sources.dart';
+import 'package:pray/core/http_fetch.dart';
 import 'package:pray/localization/localization.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
@@ -43,6 +44,10 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
   var _phase = _Phase.start;
   var _status = '';
   double? _progress;
+  var _testing = false;
+  var _alive = 0;
+  var _finishEarly = false;
+  final _counts = <String, int?>{};
   var _found = <FoundServer>[];
   final _picked = <FoundServer>{};
   var _cancelled = false;
@@ -55,11 +60,27 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
   List<ConfigSource> _load() {
     final saved = widget.settings.freeSources;
     if (saved == null) return List.of(defaultConfigSources);
-    return saved.map(ConfigSource.decode).whereType<ConfigSource>().toList();
+    final list =
+        saved.map(ConfigSource.decode).whereType<ConfigSource>().toList();
+    if (widget.settings.freeSourcesVersion < defaultSourcesVersion) {
+      final known = {for (final s in list) s.url};
+      list.addAll(defaultConfigSources.where((s) => !known.contains(s.url)));
+      widget.settings.freeSources = [for (final s in list) s.encode()];
+      widget.settings.freeSourcesVersion = defaultSourcesVersion;
+    }
+    return list;
   }
 
   void _persist() {
     widget.settings.freeSources = [for (final s in _sources) s.encode()];
+    widget.settings.freeSourcesVersion = defaultSourcesVersion;
+  }
+
+  String _sourceNote(ConfigSource source) {
+    if (!_counts.containsKey(source.url)) return source.url;
+    final count = _counts[source.url];
+    if (count == null) return 'Could not download this list'.tr;
+    return 'Downloaded: $count servers'.tr;
   }
 
   @override
@@ -100,7 +121,7 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
           ),
           FilledButton(
             onPressed: () {
-              final link = url.text.trim();
+              final link = normalizeWebLink(url.text);
               if (!link.startsWith('http')) return;
               Navigator.of(dialogContext).pop(
                 ConfigSource(
@@ -133,10 +154,24 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
     setState(() {
       _phase = _Phase.working;
       _status = 'Looking for servers…';
-      _progress = null;
+      _progress = 0;
       _message = null;
+      _testing = false;
+      _alive = 0;
+      _finishEarly = false;
+      _counts.clear();
     });
-    final found = await FreeSources.fetch(chosen);
+    final found = await FreeSources.fetch(
+      chosen,
+      onSource: (source, count) => _counts[source.url] = count,
+      onProgress: (done, total) {
+        if (!mounted) return;
+        setState(() {
+          _progress = done / total;
+          _status = 'Downloading the lists: $done of $total';
+        });
+      },
+    );
     if (!mounted) return;
     if (found.isEmpty) {
       setState(() {
@@ -147,16 +182,20 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
       return;
     }
     setState(() {
-      _status = 'Checking which ones work…';
+      _status = 'Checking ${found.length} servers…';
       _progress = 0;
+      _testing = true;
     });
     await FreeSources.testAll(
       found,
       cancelled: () => _cancelled,
-      onProgress: (done) {
-        if (mounted && done % 8 == 0) {
-          setState(() => _progress = done / found.length);
-        }
+      finishEarly: () => _finishEarly,
+      onProgress: (done, alive) {
+        if (!mounted || done % 6 != 0) return;
+        setState(() {
+          _progress = done / found.length;
+          _alive = alive;
+        });
       },
     );
     if (!mounted) return;
@@ -329,7 +368,7 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
             value: _enabled.contains(source.url),
             title: Text(source.name),
             subtitle: Text(
-              source.url,
+              _sourceNote(source),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -390,11 +429,26 @@ class _FreeConfigsPageState extends State<_FreeConfigsPage> {
         textAlign: TextAlign.center,
         style: theme.textTheme.titleMedium,
       ),
+      if (_testing)
+        Text(
+          '$_alive working so far',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge,
+        ),
       Text(
-        'This can take a minute.',
+        _testing
+            ? 'It stops by itself once enough working servers are found.'
+            : 'This can take a minute.',
         textAlign: TextAlign.center,
         style: theme.textTheme.bodySmall,
       ),
+      if (_testing)
+        TextButton(
+          onPressed: _alive == 0 || _finishEarly
+              ? null
+              : () => setState(() => _finishEarly = true),
+          child: const Text('Use what was found'),
+        ),
     ]);
   }
 

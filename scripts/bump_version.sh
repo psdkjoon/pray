@@ -12,7 +12,14 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 printf '%s\n' "$version" > "$root/VERSION"
 sed -i -E "s/^version: .*/version: $version/" "$root/pubspec.yaml"
 sed -i -E "s/(static const String version = ')[^']*(')/\1$version\2/" "$root/lib/app_info.dart"
+sed -i -E \
+    -e "s#(/DAppVersion=)[0-9][0-9.]*#\1$version#" \
+    -e "s#(bump_version\.sh )[0-9][0-9.]*#\1$version#" \
+    -e "s#(Release )[0-9][0-9.]*#\1$version#" \
+    -e "s#\`v[0-9][0-9.]*\`#\`v$version\`#" \
+    "$root/README.md"
 
 echo "VERSION      $(tr -d '[:space:]' < "$root/VERSION")"
 echo "pubspec.yaml $(grep -oP '^version: \K\S+' "$root/pubspec.yaml")"
 echo "app_info     $(grep -oP "static const String version = '\K[^']+" "$root/lib/app_info.dart")"
+echo "README.md    $version"

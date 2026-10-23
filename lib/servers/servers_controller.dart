@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:pray/core/http_fetch.dart';
 import 'package:pray/core/kv_store.dart';
 import 'package:pray/core/real_ping.dart';
 import 'package:pray/core/xray_config/xray_config.dart';
 import 'package:pray/servers/stored_server.dart';
+import 'package:pray/servers/subscription_group.dart';
 
 enum ServerSort {
   added('Oldest first'),
@@ -20,7 +22,12 @@ enum ServerSort {
 }
 
 class ServersController extends ChangeNotifier {
-  ServersController._(this._prefs, this._servers, this._selectedId);
+  ServersController._(
+    this._prefs,
+    this._servers,
+    this._selectedId,
+    this._groups,
+  );
 
   final KvStore _prefs;
 
@@ -39,6 +46,7 @@ class ServersController extends ChangeNotifier {
               ),
               pinned: map['pinned'] as bool? ?? false,
               pingMs: map['ping'] as int?,
+              groupId: map['group'] as String?,
             ),
           );
         }
@@ -46,10 +54,37 @@ class ServersController extends ChangeNotifier {
     } on Object {
       servers.clear();
     }
+    final groups = <SubscriptionGroup>[];
+    try {
+      final raw = prefs.getString('groups');
+      if (raw != null) {
+        for (final item in jsonDecode(raw) as List) {
+          groups.add(
+            SubscriptionGroup.fromJson(Map<String, Object?>.from(item as Map)),
+          );
+        }
+      }
+    } on Object {
+      groups.clear();
+    }
+    final known = {for (final g in groups) g.id};
+    final cleaned = [
+      for (final s in servers)
+        if (s.groupId != null && !known.contains(s.groupId))
+          StoredServer(
+            id: s.id,
+            proxy: s.proxy,
+            pingMs: s.pingMs,
+            pinned: s.pinned,
+          )
+        else
+          s,
+    ];
     final controller = ServersController._(
       prefs,
-      servers,
+      cleaned,
       prefs.getString('selectedServer') ?? '',
+      groups,
     );
     final saved = prefs.getString('serverSort');
     for (final option in ServerSort.values) {
@@ -60,11 +95,13 @@ class ServersController extends ChangeNotifier {
 
   final _random = Random();
   List<StoredServer> _servers;
+  List<SubscriptionGroup> _groups;
   String _selectedId;
   bool _testing = false;
   bool _disposed = false;
+  final Set<String> _updating = {};
 
-  ServerSort _sort = ServerSort.added;
+  ServerSort _sort = ServerSort.ping;
 
   ServerSort get sort => _sort;
 
@@ -157,8 +194,13 @@ class ServersController extends ChangeNotifier {
           'proxy': s.proxy.toJson(),
           'pinned': s.pinned,
           'ping': s.pingMs,
+          'group': s.groupId,
         },
       ]),
+    );
+    _prefs.setString(
+      'groups',
+      jsonEncode([for (final g in _groups) g.toJson()]),
     );
     _prefs.setString('selectedServer', _selectedId);
   }
@@ -173,15 +215,7 @@ class ServersController extends ChangeNotifier {
   void update(String id, ProxyServer proxy) {
     _servers = [
       for (final s in _servers)
-        if (s.id == id)
-          StoredServer(
-            id: id,
-            proxy: proxy,
-            pingMs: s.pingMs,
-            pinned: s.pinned,
-          )
-        else
-          s,
+        if (s.id == id) s.withProxy(proxy) else s,
     ];
     _save();
     notifyListeners();
@@ -234,8 +268,178 @@ class ServersController extends ChangeNotifier {
     return result;
   }
 
-  String _newId() {
-    return 'server-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+
+  List<SubscriptionGroup> get groups => List.unmodifiable(_groups);
+
+  SubscriptionGroup? groupById(String? id) {
+    for (final group in _groups) {
+      if (group.id == id) return group;
+    }
+    return null;
+  }
+
+  bool isUpdating(String groupId) => _updating.contains(groupId);
+
+  bool get updatingAny => _updating.isNotEmpty;
+
+  int countIn(String? groupId) =>
+      _servers.where((s) => s.groupId == groupId).length;
+
+  Future<SubscriptionResult> addSubscription({
+    required String url,
+    String? name,
+  }) async {
+    final link = url.trim();
+    final fetched = await fetchResponse(link);
+    final result = parseSubscription(fetched.body);
+    if (result.servers.isEmpty) {
+      throw FormatException(
+        result.errors.isEmpty
+            ? 'No servers found'
+            : result.errors.first.message,
+      );
+    }
+    final given = name?.trim() ?? '';
+    final group = SubscriptionGroup(
+      id: _newId('group'),
+      name: given.isNotEmpty
+          ? given
+          : (fetched.title ?? Uri.tryParse(link)?.host ?? link),
+      url: link,
+      updatedAt: DateTime.now(),
+    );
+    final added = [
+      for (final proxy in result.servers)
+        StoredServer(id: _newId(), proxy: proxy, groupId: group.id),
+    ];
+    _groups = [..._groups, group];
+    _servers = [..._servers, ...added];
+    if (_selectedId.isEmpty) _selectedId = added.first.id;
+    _save();
+    notifyListeners();
+    return result;
+  }
+
+  Future<SubscriptionResult> updateGroup(String groupId) async {
+    final group = groupById(groupId);
+    if (group == null) return const SubscriptionResult(servers: [], errors: []);
+    if (!_updating.add(groupId)) {
+      return const SubscriptionResult(servers: [], errors: []);
+    }
+    notifyListeners();
+    try {
+      final fetched = await fetchResponse(group.url);
+      final result = parseSubscription(fetched.body);
+      if (_disposed) return result;
+      if (result.servers.isEmpty) {
+        throw FormatException(
+          result.errors.isEmpty
+              ? 'No servers found'
+              : result.errors.first.message,
+        );
+      }
+      _mergeGroup(groupId, result.servers);
+      _groups = [
+        for (final g in _groups)
+          if (g.id == groupId) g.copyWith(updatedAt: DateTime.now()) else g,
+      ];
+      _save();
+      return result;
+    } finally {
+      _updating.remove(groupId);
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<int> updateAllGroups() async {
+    var failed = 0;
+    for (final group in List.of(_groups)) {
+      try {
+        await updateGroup(group.id);
+      } on Object {
+        failed++;
+      }
+    }
+    return failed;
+  }
+
+  void _mergeGroup(String groupId, List<ProxyServer> fresh) {
+    final old = [for (final s in _servers) if (s.groupId == groupId) s];
+    final waiting = <String, List<StoredServer>>{};
+    for (final server in old) {
+      waiting.putIfAbsent(_identity(server.proxy), () => []).add(server);
+    }
+    final merged = <StoredServer>[];
+    for (final proxy in fresh) {
+      final candidates = waiting[_identity(proxy)];
+      final match = candidates != null && candidates.isNotEmpty
+          ? candidates.removeAt(0)
+          : null;
+      if (match != null) {
+        merged.add(match.withProxy(proxy));
+      } else {
+        merged.add(StoredServer(id: _newId(), proxy: proxy, groupId: groupId));
+      }
+    }
+    final firstOld = _servers.indexWhere((s) => s.groupId == groupId);
+    final rest = [for (final s in _servers) if (s.groupId != groupId) s];
+    final at = firstOld < 0
+        ? rest.length
+        : _servers.take(firstOld).where((s) => s.groupId != groupId).length;
+    _servers = [...rest.take(at), ...merged, ...rest.skip(at)];
+    if (!_servers.any((s) => s.id == _selectedId)) {
+      _selectedId = merged.isNotEmpty
+          ? merged.first.id
+          : (_servers.isEmpty ? '' : _servers.first.id);
+    }
+  }
+
+  static String _identity(ProxyServer p) =>
+      '${p.protocol.name}|${p.address}|${p.port}|${p.id ?? ''}|${p.password ?? ''}';
+
+  void renameGroup(String groupId, {required String name, String? url}) {
+    final cleanName = name.trim();
+    _groups = [
+      for (final g in _groups)
+        if (g.id == groupId)
+          g.copyWith(
+            name: cleanName.isEmpty ? g.name : cleanName,
+            url: (url?.trim().isEmpty ?? true) ? g.url : url!.trim(),
+          )
+        else
+          g,
+    ];
+    _save();
+    notifyListeners();
+  }
+
+  void removeGroup(String groupId, {bool keepServers = false}) {
+    _groups = [for (final g in _groups) if (g.id != groupId) g];
+    if (keepServers) {
+      _servers = [
+        for (final s in _servers)
+          if (s.groupId == groupId)
+            StoredServer(
+              id: s.id,
+              proxy: s.proxy,
+              pingMs: s.pingMs,
+              pinned: s.pinned,
+            )
+          else
+            s,
+      ];
+    } else {
+      _servers = [for (final s in _servers) if (s.groupId != groupId) s];
+      if (!_servers.any((s) => s.id == _selectedId)) {
+        _selectedId = _servers.isEmpty ? '' : _servers.first.id;
+      }
+    }
+    _save();
+    notifyListeners();
+  }
+
+  String _newId([String kind = 'server']) {
+    return '$kind-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
   }
 
   void _applyPings(Map<String, int?> pings) {
@@ -253,11 +457,14 @@ class ServersController extends ChangeNotifier {
     await testSome({id});
   }
 
-  Future<void> testAll() async {
+  Future<void> testAll({Set<String>? only}) async {
     if (_testing) return;
     _testing = true;
     notifyListeners();
-    await _run([..._servers]);
+    await _run([
+      for (final s in _servers)
+        if (only == null || only.contains(s.id)) s,
+    ]);
     if (_disposed) return;
     _testing = false;
     notifyListeners();
@@ -272,17 +479,24 @@ class ServersController extends ChangeNotifier {
 
   Future<void> _run(List<StoredServer> snapshot) async {
     final results = <String, int?>{};
+    final clock = Stopwatch()..start();
+    var lastApplied = Duration.zero;
     await RealPing.measureMany<StoredServer>(
       snapshot,
       (s) => s.proxy,
       (s, ms) {
         results[s.id] = ms;
-        if (!_disposed && results.length % 4 == 0) _applyPings({...results});
+        if (_disposed || clock.elapsed - lastApplied < _applyEvery) return;
+        lastApplied = clock.elapsed;
+        _applyPings({...results});
       },
+      cancelled: () => _disposed,
     );
     if (_disposed) return;
     _applyPings(results);
   }
+
+  static const _applyEvery = Duration(milliseconds: 300);
 
   @override
   void dispose() {

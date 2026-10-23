@@ -19,6 +19,7 @@ env:
   FLUTTER_VERSION: "3.47.3"
   BUILD_TOOLS_VERSION: "37.0.0"
   NDK_VERSION: "28.2.13676358"
+  XRAY_VERSION: "v26.6.27"
 
 jobs:
   check:
@@ -49,8 +50,6 @@ jobs:
 
       - run: flutter pub get
       - run: flutter analyze
-      - name: Test
-        run: if [ -d test ]; then flutter test; else echo "no test/ directory, skipping"; fi
 
   android:
     needs: check

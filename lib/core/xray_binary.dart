@@ -146,6 +146,13 @@ abstract class _LinuxXrayBinary {
     return null;
   }
 
+  static Future<void> _replaceBinary(File file, List<int> bytes) async {
+    final fresh = File('${file.path}.new');
+    await fresh.writeAsBytes(bytes, flush: true);
+    await Process.run('chmod', ['755', fresh.path]);
+    await fresh.rename(file.path);
+  }
+
   static Future<XrayInstall> ensureExtracted() async {
     final dir = Directory(_installDir);
     await dir.create(recursive: true);
@@ -165,7 +172,11 @@ abstract class _LinuxXrayBinary {
           binaryPath = file.path;
           continue;
         }
-        await file.writeAsBytes(bytes, flush: true);
+        try {
+          await _replaceBinary(file, bytes);
+        } on FileSystemException {
+          if (!await _fileIsElf(file)) rethrow;
+        }
         binaryPath = file.path;
         continue;
       }

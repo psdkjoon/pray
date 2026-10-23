@@ -4,10 +4,10 @@ import 'package:pray/app_info.dart';
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/notification_service.dart';
+import 'package:pray/platform/system_service.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
-import 'package:pray/ui/about_screen.dart';
 import 'package:pray/ui/home_screen.dart';
 import 'package:pray/ui/routing_screen.dart';
 import 'package:pray/ui/servers_screen.dart';
@@ -45,7 +45,6 @@ class _AppShellState extends State<AppShell> {
     _Destination('Servers', Icons.dns_outlined, Icons.dns_rounded),
     _Destination('Routing', Icons.alt_route_rounded, Icons.alt_route_rounded),
     _Destination('Settings', Icons.tune_rounded, Icons.tune_rounded),
-    _Destination('About', Icons.info_outline_rounded, Icons.info_rounded),
   ];
 
   static var _lastIndex = 0;
@@ -55,10 +54,44 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    if (AppInfo.usesNotifications) NotificationService.requestPermission();
+    if (AppInfo.usesNotifications || AppInfo.usesBackground) {
+      NotificationService.requestPermission();
+    }
+    if (AppInfo.usesBackground) {
+      Future<void>.delayed(const Duration(seconds: 2), _askBackgroundAccess);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) UpdatePrompt.run(context, widget.settings);
     });
+  }
+
+  Future<void> _askBackgroundAccess() async {
+    if (!mounted || widget.settings.backgroundAsked) return;
+    if (await SystemService.isBackgroundAllowed()) return;
+    if (!mounted) return;
+    widget.settings.backgroundAsked = true;
+    final allow = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Keep running in the background'),
+        content: const Text(
+          'Android can stop Pray while the screen is off and drop your '
+          'connection. Allow Pray to run in the background to prevent that. '
+          'You can change this later in Android settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+    if (allow ?? false) await SystemService.requestBackgroundAccess();
   }
 
   void _select(int index) => setState(() => _index = _lastIndex = index);
@@ -80,11 +113,10 @@ class _AppShellState extends State<AppShell> {
             settings: widget.settings,
             connection: widget.connection,
           ),
-        3 => SettingsScreen(
+        _ => SettingsScreen(
             settings: widget.settings,
             connection: widget.connection,
           ),
-        _ => const AboutScreen(),
       },
     );
 
@@ -117,17 +149,10 @@ class _AppShellState extends State<AppShell> {
     } else {
       scaffold = Scaffold(
         body: page,
-        bottomNavigationBar: NavigationBar(
+        bottomNavigationBar: _CompactBar(
+          destinations: _destinations,
           selectedIndex: _index,
-          onDestinationSelected: _select,
-          destinations: [
-            for (final d in _destinations)
-              NavigationDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(d.selectedIcon),
-                label: d.label.tr,
-              ),
-          ],
+          onSelected: _select,
         ),
       );
     }
@@ -191,6 +216,114 @@ class _Sidebar extends StatelessWidget {
                     onTap: () => onSelected(i),
                   ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactBar extends StatelessWidget {
+  const _CompactBar({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<_Destination> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  static const double _height = 56;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: _height,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (var i = 0; i < destinations.length; i++)
+                _CompactItem(
+                  destination: destinations[i],
+                  selected: i == selectedIndex,
+                  onTap: () => onSelected(i),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactItem extends StatelessWidget {
+  const _CompactItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _Destination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  static const double _pillHeight = 40;
+  static const Duration _duration = Duration(milliseconds: 220);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final color = selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label.tr,
+      child: ExcludeSemantics(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: _duration,
+              curve: Curves.easeOutCubic,
+              height: _pillHeight,
+              constraints: const BoxConstraints(minWidth: 48),
+              padding: EdgeInsets.symmetric(
+                horizontal: selected ? AppSpacing.md : AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: selected ? scheme.secondaryContainer : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: AnimatedSize(
+                duration: _duration,
+                curve: Curves.easeOutCubic,
+                alignment: AlignmentDirectional.centerStart,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: AppSpacing.sm,
+                  children: [
+                    Icon(
+                      selected ? destination.selectedIcon : destination.icon,
+                      color: color,
+                    ),
+                    if (selected)
+                      Text(
+                        destination.label,
+                        style: theme.textTheme.labelLarge?.copyWith(color: color),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

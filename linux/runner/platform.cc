@@ -23,8 +23,6 @@ static void hide_window() { gtk_widget_hide(GTK_WIDGET(state->window)); }
 static gboolean on_delete(GtkWidget*, GdkEvent*, gpointer) {
   if (state->quitting) return FALSE;
   if (!tray_is_registered()) {
-    // Without a tray icon a hidden window could never be brought back, so
-    // closing the window quits the app instead.
     state->quitting = TRUE;
     g_application_quit(state->application);
     return TRUE;

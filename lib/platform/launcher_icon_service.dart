@@ -1,77 +1,38 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pray/settings/app_settings.dart';
 
 abstract class LauncherIconService {
   static const _channel = MethodChannel('pray/launcher_icon');
-  static final _observer = _LifecycleObserver();
   static AppSettings? _settings;
-  static bool Function() _canApply = () => true;
-  static bool _background = false;
-  static bool? _desired;
-  static bool? _applied;
+  static String? _sent;
 
-  static void init(
-    AppSettings settings, {
-    Listenable? refreshOn,
-    bool Function()? canApply,
-  }) {
+  static void init(AppSettings settings) {
     if (!Platform.isAndroid || _settings != null) return;
     _settings = settings;
-    _canApply = canApply ?? _canApply;
-    settings.addListener(_update);
-    refreshOn?.addListener(() {
-      if (_background) _flush();
-    });
-    WidgetsBinding.instance.addObserver(_observer);
-    _update();
+    settings.addListener(_push);
+    unawaited(_push());
   }
 
-  static void _update() {
+  static Future<void> _push() async {
     final settings = _settings;
     if (settings == null) return;
-    _desired = switch (settings.themeMode) {
-      ThemeMode.dark => true,
-      ThemeMode.light => false,
-      ThemeMode.system =>
-        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-            Brightness.dark,
-    };
-  }
-
-  static Future<void> _flush() async {
-    final dark = _desired;
-    if (dark == null || dark == _applied) return;
-    if (!_canApply()) return;
+    final mode = settings.themeMode.name;
+    final key = '$mode|${settings.accent}|${settings.appearanceUpdatedAt}';
+    if (key == _sent) return;
+    _sent = key;
     try {
-      await _channel.invokeMethod<void>('set', {'dark': dark});
-      _applied = dark;
+      await _channel.invokeMethod<void>('configure', {
+        'mode': mode,
+        'accent': settings.accent,
+        'updatedAt': settings.appearanceUpdatedAt,
+      });
     } on PlatformException {
-      return;
-    }
-  }
-}
-
-class _LifecycleObserver with WidgetsBindingObserver {
-  @override
-  void didChangePlatformBrightness() => LauncherIconService._update();
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        LauncherIconService._background = false;
-        LauncherIconService._update();
-      case AppLifecycleState.paused:
-        LauncherIconService._background = true;
-        LauncherIconService._update();
-        LauncherIconService._flush();
-      case AppLifecycleState.inactive ||
-            AppLifecycleState.hidden ||
-            AppLifecycleState.detached:
-        break;
+      _sent = null;
+    } on MissingPluginException {
+      _sent = null;
     }
   }
 }

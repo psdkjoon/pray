@@ -20,11 +20,11 @@ class PrayVpnService : VpnService() {
             ACTION_START -> {
                 startAsForeground()
                 val fd = openTun()
-                onEstablished?.invoke(fd)
                 if (fd < 0) {
                     stopForegroundCompat()
                     stopSelf()
                 }
+                onEstablished?.invoke(fd)
             }
             ACTION_STOP -> shutdown()
         }

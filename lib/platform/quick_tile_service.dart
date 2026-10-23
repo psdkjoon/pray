@@ -13,7 +13,8 @@ abstract class QuickTileService {
     if (!Platform.isAndroid) return;
     _onToggle = onToggle;
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'toggleRequested') await _consume();
+      if (call.method != 'toggleRequested') return;
+      await _onToggle?.call();
     });
     await _consume();
   }
@@ -31,6 +32,15 @@ abstract class QuickTileService {
     if (!Platform.isAndroid) return;
     try {
       await _channel.invokeMethod<void>('setState', {'state': state.name});
+    } on PlatformException {
+      return;
+    }
+  }
+
+  static Future<void> toast(String message) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('toast', {'message': message});
     } on PlatformException {
       return;
     }

@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/connection/proxy_endpoint.dart';
+import 'package:pray/core/traffic_meter.dart';
 import 'package:pray/localization/localization.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/servers/stored_server.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
+import 'package:pray/ui/terminal_sheet.dart';
 import 'package:pray/ui/widgets/endpoint_card.dart';
 import 'package:pray/ui/widgets/power_button.dart';
 import 'package:pray/ui/widgets/server_card.dart';
@@ -49,6 +53,7 @@ class HomeScreen extends StatelessWidget {
                       controller: controller,
                       server: servers.selected,
                       address: ProxyEndpoint.address(settings.proxyPort),
+                      port: settings.proxyPort,
                     );
                     if (wide) {
                       return Row(
@@ -175,12 +180,14 @@ class _Info extends StatelessWidget {
     required this.controller,
     required this.server,
     required this.address,
+    required this.port,
   });
 
   final bool inline;
   final ConnectionController controller;
   final StoredServer? server;
   final String address;
+  final int port;
 
   @override
   Widget build(BuildContext context) {
@@ -191,13 +198,13 @@ class _Info extends StatelessWidget {
       StatCard(
         icon: Icons.south_rounded,
         label: 'Down',
-        value: connected ? '12.4 MB/s' : '\u2014',
+        value: connected ? formatSpeed(controller.speed.down) : '\u2014',
         inline: inline,
       ),
       StatCard(
         icon: Icons.north_rounded,
         label: 'Up',
-        value: connected ? '1.8 MB/s' : '\u2014',
+        value: connected ? formatSpeed(controller.speed.up) : '\u2014',
         inline: inline,
       ),
       StatCard(
@@ -222,7 +229,12 @@ class _Info extends StatelessWidget {
           ),
         if (server != null) ServerCard(server: server!),
         if (defaultTargetPlatform != TargetPlatform.android)
-          EndpointCard(address: address),
+          EndpointCard(
+            address: address,
+            onTerminal: Platform.isLinux
+                ? () => showTerminalSheet(context, port)
+                : null,
+          ),
       ],
     );
   }

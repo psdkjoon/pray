@@ -13,7 +13,6 @@
 namespace {
 
 constexpr wchar_t kInstanceMutexName[] = L"Local\\ir.psdkjoon.pray.instance";
-// Must match the window class registered in win32_window.cpp.
 constexpr wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 constexpr wchar_t kWindowTitle[] = L"Pray";
 
@@ -26,10 +25,6 @@ bool HasArgument(const std::vector<std::string>& arguments, const char* name) {
   return false;
 }
 
-// Puts this process in a job object that kills every process in it when the
-// last handle closes. xray.exe is started as a child of Pray, so it is stopped
-// together with the app even if Pray is killed or crashes, instead of staying
-// behind and holding the proxy port.
 void KillChildrenOnExit() {
   HANDLE job = ::CreateJobObjectW(nullptr, nullptr);
   if (job == nullptr) {
@@ -42,10 +37,9 @@ void KillChildrenOnExit() {
       !::AssignProcessToJobObject(job, ::GetCurrentProcess())) {
     ::CloseHandle(job);
   }
-  // The handle is intentionally kept open until the process ends.
 }
 
-}  // namespace
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
@@ -53,7 +47,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   const bool start_hidden = HasArgument(command_line_arguments, "--tray") ||
                             HasArgument(command_line_arguments, "--hidden");
 
-  // Only one Pray at a time: a second launch brings the first one forward.
   HANDLE instance_mutex = ::CreateMutexW(nullptr, FALSE, kInstanceMutexName);
   if (instance_mutex != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
     if (!start_hidden) {
@@ -69,22 +62,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   KillChildrenOnExit();
 
-  // Attach to console when present (e.g., 'flutter run') or create a
-  // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
     CreateAndAttachConsole();
   }
 
-  // Initialize COM, so that it is available for use in the library and/or
-  // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
   flutter::DartProject project(L"data");
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
-  // Centre a 1000x680 window (logical pixels) on the primary monitor, and keep
-  // it inside small screens.
   const double scale = static_cast<double>(::GetDpiForSystem()) / 96.0;
   const double screen_width = ::GetSystemMetrics(SM_CXSCREEN) / scale;
   const double screen_height = ::GetSystemMetrics(SM_CYSCREEN) / scale;

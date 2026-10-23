@@ -21,8 +21,6 @@ static gboolean start_hidden(MyApplication* self) {
   return FALSE;
 }
 
-// When started hidden (launch at login), make sure the app does not stay
-// invisible if no tray ever picks up its icon.
 static gboolean show_if_no_tray(gpointer user_data) {
   GtkWidget* window = GTK_WIDGET(user_data);
   if (!tray_is_registered() && !gtk_widget_get_visible(window)) {
@@ -37,8 +35,21 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }
 
+static void present_existing(GtkApplication* application) {
+  GList* windows = gtk_application_get_windows(application);
+  if (windows == nullptr) return;
+  GtkWindow* window = GTK_WINDOW(windows->data);
+  gtk_widget_show(GTK_WIDGET(window));
+  gtk_window_deiconify(window);
+  gtk_window_present(window);
+}
+
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+  if (gtk_application_get_windows(GTK_APPLICATION(application)) != nullptr) {
+    if (!start_hidden(self)) present_existing(GTK_APPLICATION(application));
+    return;
+  }
   g_application_hold(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
@@ -94,6 +105,11 @@ static gboolean my_application_local_command_line(GApplication* application,
     return TRUE;
   }
 
+  if (g_application_get_is_remote(application) && start_hidden(self)) {
+    *exit_status = 0;
+    return TRUE;
+  }
+
   g_application_activate(application);
   *exit_status = 0;
 
@@ -132,5 +148,5 @@ MyApplication* my_application_new() {
 
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_NON_UNIQUE, nullptr));
+                                     G_APPLICATION_DEFAULT_FLAGS, nullptr));
 }

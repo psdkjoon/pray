@@ -1,3 +1,5 @@
+import 'dart:io';
+
 enum ProxyProtocol { vless, vmess, trojan, shadowsocks }
 
 enum Transport { tcp, ws, grpc, kcp, httpUpgrade, xhttp, h2 }
@@ -187,32 +189,54 @@ class ProxyServer {
 
   String get displayName => name.isEmpty ? '$address:$port' : name;
 
+  bool get isPlainVless =>
+      protocol == ProxyProtocol.vless &&
+      encryption == 'none' &&
+      stream.security == Security.none &&
+      _isPublicIp(address);
+
+  String get protocolLabel => switch (protocol) {
+        ProxyProtocol.vless => 'VLESS',
+        ProxyProtocol.vmess => 'VMess',
+        ProxyProtocol.trojan => 'Trojan',
+        ProxyProtocol.shadowsocks => 'Shadowsocks',
+      };
+
+  String? get securityLabel => switch (stream.security) {
+        Security.none => null,
+        Security.tls => 'TLS',
+        Security.reality => 'Reality',
+      };
+
+  String get transportLabel => switch (stream.transport) {
+        Transport.tcp => 'TCP',
+        Transport.ws => 'WebSocket',
+        Transport.grpc => 'gRPC',
+        Transport.kcp => 'mKCP',
+        Transport.httpUpgrade => 'HTTPUpgrade',
+        Transport.xhttp => 'XHTTP',
+        Transport.h2 => 'HTTP/2',
+      };
+
   String get summary {
-    final protocolName = switch (protocol) {
-      ProxyProtocol.vless => 'VLESS',
-      ProxyProtocol.vmess => 'VMess',
-      ProxyProtocol.trojan => 'Trojan',
-      ProxyProtocol.shadowsocks => 'Shadowsocks',
-    };
-    final securityName = switch (stream.security) {
-      Security.none => null,
-      Security.tls => 'TLS',
-      Security.reality => 'Reality',
-    };
-    final transportName = switch (stream.transport) {
-      Transport.tcp => 'TCP',
-      Transport.ws => 'WebSocket',
-      Transport.grpc => 'gRPC',
-      Transport.kcp => 'mKCP',
-      Transport.httpUpgrade => 'HTTPUpgrade',
-      Transport.xhttp => 'XHTTP',
-      Transport.h2 => 'HTTP/2',
-    };
-    final parts = [
-      protocolName,
-      if (securityName != null) securityName,
-      transportName,
-    ];
-    return parts.join(' ');
+    final security = securityLabel;
+    return [
+      protocolLabel,
+      if (security != null) security,
+      transportLabel,
+    ].join(' ');
   }
+}
+
+bool _isPublicIp(String host) {
+  final ip = InternetAddress.tryParse(host.replaceAll(RegExp(r'^\[|\]$'), ''));
+  if (ip == null || ip.isLoopback || ip.isLinkLocal) return false;
+  final raw = ip.rawAddress;
+  if (ip.type == InternetAddressType.IPv4) {
+    final privateRange = raw[0] == 10 ||
+        (raw[0] == 172 && raw[1] >= 16 && raw[1] < 32) ||
+        (raw[0] == 192 && raw[1] == 168);
+    return !privateRange;
+  }
+  return (raw[0] & 0xfe) != 0xfc;
 }

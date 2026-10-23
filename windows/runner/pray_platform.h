@@ -11,16 +11,6 @@
 #include <string>
 #include <vector>
 
-// Desktop integration for Pray on Windows. It implements the same platform
-// channels the Linux runner provides:
-//
-//   pray/window  show, hide, toggle, quit, notify
-//   pray/tray    create, setIcon, setMenu (calls back: activate, menuClick)
-//   pray/system  openUrl, pickFilePath, saveFilePath, getAutostart,
-//                setAutostart
-//
-// plus close-to-tray, a minimum window size and the "show the window" message
-// a second launch sends to the running instance.
 class PrayPlatform {
  public:
   PrayPlatform(HWND window, flutter::BinaryMessenger* messenger);
@@ -29,13 +19,9 @@ class PrayPlatform {
   PrayPlatform(const PrayPlatform&) = delete;
   PrayPlatform& operator=(const PrayPlatform&) = delete;
 
-  // Handles a message for the top-level window. Returns true (and sets
-  // |result|) when the message was consumed.
   bool HandleMessage(HWND window, UINT message, WPARAM wparam, LPARAM lparam,
                      LRESULT* result);
 
-  // Registered window message a second instance posts to bring the first one
-  // to the front.
   static UINT ShowWindowMessage();
 
  private:
@@ -82,4 +68,4 @@ class PrayPlatform {
   UINT taskbar_created_message_ = 0;
 };
 
-#endif  // RUNNER_PRAY_PLATFORM_H_
+#endif

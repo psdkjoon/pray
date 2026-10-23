@@ -4,9 +4,11 @@ import 'package:pray/localization/localization.dart';
 import 'package:pray/theme/app_spacing.dart';
 
 class EndpointCard extends StatelessWidget {
-  const EndpointCard({required this.address, super.key});
+  const EndpointCard({required this.address, this.onTerminal, super.key});
 
   final String address;
+
+  final VoidCallback? onTerminal;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +27,22 @@ class EndpointCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
-                  Text(address, style: theme.textTheme.titleMedium),
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: SelectableText(
+                      address,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
                 ],
               ),
             ),
+            if (onTerminal != null)
+              IconButton(
+                tooltip: 'Terminal'.tr,
+                icon: const Icon(Icons.terminal_rounded),
+                onPressed: onTerminal,
+              ),
             IconButton(
               tooltip: 'Copy address'.tr,
               icon: const Icon(Icons.copy_rounded),
@@ -36,7 +50,7 @@ class EndpointCard extends StatelessWidget {
                 await Clipboard.setData(ClipboardData(text: address));
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Copied $address')),
+                  const SnackBar(content: Text('Address copied')),
                 );
               },
             ),

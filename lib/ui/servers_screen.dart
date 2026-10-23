@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text, Icon;
+import 'package:flutter/widgets.dart' as w show Text;
 import 'package:flutter/services.dart';
 import 'package:pray/core/http_fetch.dart';
 import 'package:pray/core/pray_file.dart';
@@ -10,6 +11,7 @@ import 'package:pray/localization/localization.dart';
 import 'package:pray/platform/system_service.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/servers/stored_server.dart';
+import 'package:pray/servers/subscription_group.dart';
 import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/ui/free_configs_dialog.dart';
@@ -39,6 +41,18 @@ class _ServersScreenState extends State<ServersScreen> {
   static const double _spinnerSize = 22;
 
   final Set<String> _picked = {};
+
+  static const _viewAll = '';
+  static const _viewManual = '*manual';
+  String _view = _viewAll;
+
+  List<StoredServer> _inView(List<StoredServer> all) {
+    return switch (_view) {
+      _viewAll => all,
+      _viewManual => [for (final s in all) if (s.groupId == null) s],
+      final id => [for (final s in all) if (s.groupId == id) s],
+    };
+  }
 
   void _toggle(String id) {
     setState(() {
@@ -214,7 +228,7 @@ class _ServersScreenState extends State<ServersScreen> {
     ];
   }
 
-  static const double _rowHeight = 88;
+  static const double _rowHeight = 104;
   final _scroll = ScrollController();
   var _dragAnchor = 0;
   var _dragSelects = true;
@@ -291,9 +305,16 @@ class _ServersScreenState extends State<ServersScreen> {
     return ListenableBuilder(
       listenable: servers,
       builder: (context, _) {
-        final all = servers.servers;
+        if (_view != _viewAll &&
+            _view != _viewManual &&
+            servers.groupById(_view) == null) {
+          _view = _viewAll;
+        }
+        final everything = servers.servers;
+        final all = _inView(everything);
         _picked.removeWhere((id) => !all.any((s) => s.id == id));
         final selecting = _picked.isNotEmpty;
+        final group = servers.groupById(_view);
         return PageFrame(
           actions: selecting
               ? _selectionActions(context, all)
@@ -305,7 +326,13 @@ class _ServersScreenState extends State<ServersScreen> {
                   ),
                   IconButton(
                     tooltip: 'Test latency'.tr,
-                    onPressed: servers.testing ? null : servers.testAll,
+                    onPressed: servers.testing
+                        ? null
+                        : () => unawaited(
+                              servers.testAll(
+                                only: {for (final s in all) s.id},
+                              ),
+                            ),
                     icon: servers.testing
                         ? const SizedBox.square(
                             dimension: _spinnerSize,
@@ -313,6 +340,24 @@ class _ServersScreenState extends State<ServersScreen> {
                           )
                         : const Icon(Icons.speed_rounded),
                   ),
+                  if (servers.groups.isNotEmpty)
+                    IconButton(
+                      tooltip: (group == null
+                              ? 'Update all subscriptions'
+                              : 'Update subscription')
+                          .tr,
+                      onPressed: servers.updatingAny
+                          ? null
+                          : () => group == null
+                              ? _updateAll(context)
+                              : _updateGroup(context, group),
+                      icon: servers.updatingAny
+                          ? const SizedBox.square(
+                              dimension: _spinnerSize,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.sync_rounded),
+                    ),
                   IconButton(
                     tooltip: 'Free configs'.tr,
                     onPressed: () =>
@@ -332,59 +377,92 @@ class _ServersScreenState extends State<ServersScreen> {
                     icon: const Icon(Icons.add_rounded),
                   ),
                 ],
-          child: all.isEmpty
-              ? const Center(child: Text('No servers yet. Tap + to add one.'))
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    return GestureDetector(
-                      onLongPressStart: (details) {
-                        unawaited(HapticFeedback.selectionClick());
-                        _dragAnchor = _indexAt(details.localPosition, all.length);
-                        _dragBase = {..._picked};
-                        _dragSelects = !_picked.contains(all[_dragAnchor].id);
-                        _applyDrag(all, _dragAnchor);
-                      },
-                      onLongPressMoveUpdate: (details) {
-                        _autoScroll(details.localPosition, constraints.maxHeight);
-                        _applyDrag(
-                          all,
-                          _indexAt(details.localPosition, all.length),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: AppSpacing.sm,
+            children: [
+              if (servers.groups.isNotEmpty)
+                _GroupChips(
+                  servers: servers,
+                  view: _view,
+                  manualCount: servers.countIn(null),
+                  total: everything.length,
+                  onPick: (value) => setState(() {
+                    _view = value;
+                    _picked.clear();
+                  }),
+                ),
+              if (group != null)
+                _GroupBar(
+                  group: group,
+                  updating: servers.isUpdating(group.id),
+                  onUpdate: () => _updateGroup(context, group),
+                  onEdit: () => _editGroup(context, group),
+                  onDelete: () => _deleteGroup(context, group),
+                ),
+              Expanded(
+                child: all.isEmpty
+                  ? Center(
+                      child: Text(
+                        everything.isEmpty
+                            ? 'No servers yet. Tap + to add one.'
+                            : 'No servers here.',
+                      ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        return GestureDetector(
+                          onLongPressStart: (details) {
+                            unawaited(HapticFeedback.selectionClick());
+                            _dragAnchor = _indexAt(details.localPosition, all.length);
+                            _dragBase = {..._picked};
+                            _dragSelects = !_picked.contains(all[_dragAnchor].id);
+                            _applyDrag(all, _dragAnchor);
+                          },
+                          onLongPressMoveUpdate: (details) {
+                            _autoScroll(details.localPosition, constraints.maxHeight);
+                            _applyDrag(
+                              all,
+                              _indexAt(details.localPosition, all.length),
+                            );
+                          },
+                          child: ListView.builder(
+                            controller: _scroll,
+                            itemExtent: _rowHeight,
+                            itemCount: all.length,
+                            itemBuilder: (context, index) {
+                              final server = all[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.sm,
+                                ),
+                                child: ServerTile(
+                                  server: server,
+                                  selected: server.id == servers.selectedId,
+                                  selecting: selecting,
+                                  checked: _picked.contains(server.id),
+                                  onTap: () {
+                                    if (selecting) {
+                                      _toggle(server.id);
+                                    } else {
+                                      servers.select(server.id);
+                                    }
+                                  },
+                                  onEdit: () => _edit(context, server),
+                                  onDelete: () => _delete(context, server),
+                                  onPin: () => servers.togglePin(server.id),
+                                  onShare: () =>
+                                      showShareDialog(context, [server]),
+                                ),
+                              );
+                            },
+                          ),
                         );
                       },
-                      child: ListView.builder(
-                        controller: _scroll,
-                        itemExtent: _rowHeight,
-                        itemCount: all.length,
-                        itemBuilder: (context, index) {
-                          final server = all[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.sm,
-                            ),
-                            child: ServerTile(
-                              server: server,
-                              selected: server.id == servers.selectedId,
-                              selecting: selecting,
-                              checked: _picked.contains(server.id),
-                              onTap: () {
-                                if (selecting) {
-                                  _toggle(server.id);
-                                } else {
-                                  servers.select(server.id);
-                                }
-                              },
-                              onEdit: () => _edit(context, server),
-                              onDelete: () => _delete(context, server),
-                              onPin: () => servers.togglePin(server.id),
-                              onShare: () =>
-                                  showShareDialog(context, [server]),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                    ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -426,6 +504,11 @@ class _ServersScreenState extends State<ServersScreen> {
 
     if (text.isEmpty) {
       _snack(context, 'Clipboard is empty');
+      return;
+    }
+
+    if (_isWebLink(text)) {
+      await _addSubscription(context, url: text);
       return;
     }
 
@@ -504,41 +587,118 @@ class _ServersScreenState extends State<ServersScreen> {
     ).whenComplete(controller.dispose);
   }
 
+  static bool _isWebLink(String text) {
+    if (text.contains(RegExp(r'\s'))) return false;
+    final uri = Uri.tryParse(text);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
   Future<void> _importSubscription(BuildContext context) async {
-    final controller = TextEditingController();
-    final url = await showDialog<String>(
+    final entry = await showDialog<({String name, String url})>(
+      context: context,
+      builder: (_) => const _SubscriptionDialog(title: 'Subscription URL'),
+    );
+    if (entry == null || !context.mounted) return;
+    await _addSubscription(context, url: entry.url, name: entry.name);
+  }
+
+  Future<void> _addSubscription(
+    BuildContext context, {
+    required String url,
+    String name = '',
+  }) async {
+    _snack(context, 'Downloading\u2026');
+    try {
+      final result = await servers.addSubscription(url: url, name: name);
+      if (!context.mounted) return;
+      setState(() => _view = servers.groups.last.id);
+      _report(context, result);
+    } on Object catch (e) {
+      if (context.mounted) {
+        _snack(context, "Couldn't download: ${_reason(e)}");
+      }
+    }
+  }
+
+  Future<void> _updateGroup(
+    BuildContext context,
+    SubscriptionGroup group,
+  ) async {
+    try {
+      final result = await servers.updateGroup(group.id);
+      if (!context.mounted) return;
+      final count = result.servers.length;
+      _snack(
+        context,
+        count == 1 ? 'Updated, 1 server' : 'Updated, $count servers',
+      );
+    } on Object catch (e) {
+      if (context.mounted) {
+        _snack(context, "Couldn't update: ${_reason(e)}");
+      }
+    }
+  }
+
+  Future<void> _updateAll(BuildContext context) async {
+    final failed = await servers.updateAllGroups();
+    if (!context.mounted) return;
+    _snack(
+      context,
+      failed == 0
+          ? 'All subscriptions updated'
+          : '$failed subscription(s) could not be updated',
+    );
+  }
+
+  Future<void> _editGroup(
+    BuildContext context,
+    SubscriptionGroup group,
+  ) async {
+    final entry = await showDialog<({String name, String url})>(
+      context: context,
+      builder: (_) => _SubscriptionDialog(
+        title: 'Edit subscription',
+        name: group.name,
+        url: group.url,
+      ),
+    );
+    if (entry == null) return;
+    servers.renameGroup(group.id, name: entry.name, url: entry.url);
+  }
+
+  Future<void> _deleteGroup(
+    BuildContext context,
+    SubscriptionGroup group,
+  ) async {
+    final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Subscription URL'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(hintText: 'https://…'.tr),
-          onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
-        ),
+        title: const Text('Delete subscription?'),
+        content: Text(group.name),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop('keep'),
+            child: const Text('Keep servers'),
+          ),
           FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('Import'),
+            onPressed: () => Navigator.of(dialogContext).pop('all'),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
-    controller.dispose();
-    if (url == null || url.trim().isEmpty || !context.mounted) return;
-    try {
-      final body = await fetchText(url.trim());
-      if (!context.mounted) return;
-      _report(context, servers.addFromSubscription(body));
-    } on Object catch (e) {
-      if (context.mounted) _snack(context, "Couldn't download: $e");
-    }
+    if (choice == null) return;
+    servers.removeGroup(group.id, keepServers: choice == 'keep');
   }
+
+  String _reason(Object error) =>
+      error is FormatException ? error.message.tr : '$error';
 
   void _snack(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -703,6 +863,189 @@ class _EditServerDialogState extends State<_EditServerDialog> {
                 _error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
+      ],
+    );
+  }
+}
+
+
+class _GroupChips extends StatelessWidget {
+  const _GroupChips({
+    required this.servers,
+    required this.view,
+    required this.manualCount,
+    required this.total,
+    required this.onPick,
+  });
+
+  final ServersController servers;
+  final String view;
+  final int manualCount;
+  final int total;
+  final ValueChanged<String> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <(String, String)>[
+      ('', '${'All'.tr} · $total'),
+      if (manualCount > 0) ('*manual', '${'Manual'.tr} · $manualCount'),
+      for (final group in servers.groups)
+        (group.id, '${group.name} · ${servers.countIn(group.id)}'),
+    ];
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final (value, label) = chips[index];
+          return ChoiceChip(
+            label: w.Text(L10n.digits(label)),
+            selected: view == value,
+            onSelected: (_) => onPick(value),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _GroupBar extends StatelessWidget {
+  const _GroupBar({
+    required this.group,
+    required this.updating,
+    required this.onUpdate,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final SubscriptionGroup group;
+  final bool updating;
+  final VoidCallback onUpdate;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  static String _ago(DateTime? time) {
+    if (time == null) return 'Never updated';
+    final span = DateTime.now().difference(time);
+    if (span.inMinutes < 1) return 'Updated just now';
+    if (span.inHours < 1) return 'Updated ${span.inMinutes} min ago';
+    if (span.inDays < 1) return 'Updated ${span.inHours} h ago';
+    return 'Updated ${span.inDays} d ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        dense: true,
+        leading: const Icon(Icons.rss_feed_rounded),
+        title: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(_ago(group.updatedAt)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Update subscription'.tr,
+              onPressed: updating ? null : onUpdate,
+              icon: updating
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync_rounded),
+            ),
+            IconButton(
+              tooltip: 'Edit'.tr,
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_rounded),
+            ),
+            IconButton(
+              tooltip: 'Delete'.tr,
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionDialog extends StatefulWidget {
+  const _SubscriptionDialog({
+    required this.title,
+    this.name = '',
+    this.url = '',
+  });
+
+  final String title;
+  final String name;
+  final String url;
+
+  @override
+  State<_SubscriptionDialog> createState() => _SubscriptionDialogState();
+}
+
+class _SubscriptionDialogState extends State<_SubscriptionDialog> {
+  late final _name = TextEditingController(text: widget.name);
+  late final _url = TextEditingController(text: widget.url);
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _url.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final url = normalizeWebLink(_url.text);
+    if (!_ServersScreenState._isWebLink(url)) {
+      setState(() => _error = 'Enter a link that starts with https://');
+      return;
+    }
+    Navigator.of(context).pop((name: _name.text.trim(), url: url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: AppSpacing.sm,
+          children: [
+            TextField(
+              controller: _url,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: 'Subscription URL'.tr,
+                hintText: 'https://…'.tr,
+                errorText: _error?.tr,
+              ),
+            ),
+            TextField(
+              controller: _name,
+              decoration: InputDecoration(
+                labelText: 'Name (optional)'.tr,
+              ),
+              onSubmitted: (_) => _save(),
+            ),
           ],
         ),
       ),

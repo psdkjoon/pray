@@ -34,10 +34,14 @@ class AppSettings extends ChangeNotifier {
     _language = prefs.getString('language') ?? L10n.system;
     L10n.code = L10n.resolve(_language);
     _checkUpdates = prefs.getBool('checkUpdates') ?? _checkUpdates;
+    _appearanceUpdatedAt =
+        prefs.getInt('accentUpdatedAt') ?? _appearanceUpdatedAt;
+    _syncAppearance = prefs.getBool('syncAccent') ?? _syncAppearance;
     final accent = prefs.getString('accent');
     if (accent != null && CatppuccinPalette.accents.contains(accent)) {
       _accent = accent;
     }
+    _backgroundAsked = prefs.getBool('backgroundAsked') ?? _backgroundAsked;
     _proxyPort = prefs.getInt('proxyPort') ?? _proxyPort;
     _allowLan = prefs.getBool('allowLan') ?? _allowLan;
     _connectOnLaunch = prefs.getBool('connectOnLaunch') ?? _connectOnLaunch;
@@ -71,6 +75,7 @@ class AppSettings extends ChangeNotifier {
       }
     }
     _freeSources = prefs.getStringList('freeSources');
+    _freeSourcesVersion = prefs.getInt('freeSourcesVersion') ?? 0;
     _perAppProxy = prefs.getBool('perAppProxy') ?? _perAppProxy;
     _tunMode = prefs.getBool('tunMode') ?? _tunMode;
     _perAppPackages = prefs.getStringList('perAppPackages') ?? _perAppPackages;
@@ -100,6 +105,9 @@ class AppSettings extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _checkUpdates = true;
   String _accent = CatppuccinPalette.defaultAccent;
+  int _appearanceUpdatedAt = 0;
+  bool _syncAppearance = true;
+  bool _backgroundAsked = false;
   int _proxyPort = ProxyEndpoint.defaultPort;
   bool _allowLan = false;
   bool _connectOnLaunch = false;
@@ -119,6 +127,7 @@ class AppSettings extends ChangeNotifier {
   ];
   WarpAccount? _warpAccount;
   List<String>? _freeSources;
+  int _freeSourcesVersion = 0;
   bool _perAppProxy = false;
   bool _tunMode = false;
   List<String> _perAppPackages = const [];
@@ -151,6 +160,12 @@ class AppSettings extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   bool get checkUpdates => _checkUpdates;
   String get accent => _accent;
+
+  int get appearanceUpdatedAt => _appearanceUpdatedAt;
+  bool get syncAppearance => _syncAppearance;
+
+
+  bool get backgroundAsked => _backgroundAsked;
   int get proxyPort => _proxyPort;
   bool get allowLan => _allowLan;
   bool get connectOnLaunch => _connectOnLaunch;
@@ -165,6 +180,7 @@ class AppSettings extends ChangeNotifier {
   List<String> get warpDomains => _warpDomains;
   WarpAccount? get warpAccount => _warpAccount;
   List<String>? get freeSources => _freeSources;
+  int get freeSourcesVersion => _freeSourcesVersion;
   bool get perAppProxy => _perAppProxy;
   bool get tunMode => _tunMode;
   List<String> get perAppPackages => _perAppPackages;
@@ -200,11 +216,42 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  set themeMode(ThemeMode value) =>
-      _set(() => _themeMode = value, 'themeMode', value.name);
+  set themeMode(ThemeMode value) {
+    if (value == _themeMode) return;
+    _stamp();
+    _set(() => _themeMode = value, 'themeMode', value.name);
+  }
+
   set checkUpdates(bool value) =>
       _set(() => _checkUpdates = value, 'checkUpdates', value);
-  set accent(String value) => _set(() => _accent = value, 'accent', value);
+  set accent(String value) {
+    if (value == _accent && _appearanceUpdatedAt != 0) return;
+    _stamp();
+    _set(() => _accent = value, 'accent', value);
+  }
+
+  set syncAppearance(bool value) =>
+      _set(() => _syncAppearance = value, 'syncAccent', value);
+
+  void _stamp() {
+    _appearanceUpdatedAt = DateTime.now().millisecondsSinceEpoch;
+    _prefs.setInt('accentUpdatedAt', _appearanceUpdatedAt);
+  }
+
+  void adoptAppearance(String accent, String? mode, int updatedAt) {
+    if (!CatppuccinPalette.accents.contains(accent)) return;
+    if (updatedAt <= _appearanceUpdatedAt) return;
+    _accent = accent;
+    if (mode != null) _themeMode = _byName(ThemeMode.values, mode, _themeMode);
+    _appearanceUpdatedAt = updatedAt;
+    _prefs.setString('accent', accent);
+    _prefs.setString('themeMode', _themeMode.name);
+    _prefs.setInt('accentUpdatedAt', updatedAt);
+    notifyListeners();
+  }
+
+  set backgroundAsked(bool value) =>
+      _set(() => _backgroundAsked = value, 'backgroundAsked', value);
   set proxyPort(int value) =>
       _set(() => _proxyPort = value, 'proxyPort', value);
   set allowLan(bool value) => _set(() => _allowLan = value, 'allowLan', value);
@@ -240,6 +287,11 @@ class AppSettings extends ChangeNotifier {
       _prefs.setString('warpAccount', jsonEncode(value.toJson()));
     }
     notifyListeners();
+  }
+
+  set freeSourcesVersion(int value) {
+    _freeSourcesVersion = value;
+    _prefs.setInt('freeSourcesVersion', value);
   }
 
   set freeSources(List<String>? value) {

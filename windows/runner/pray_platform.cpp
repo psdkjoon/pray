@@ -49,7 +49,6 @@ std::wstring WideFromUtf8(const std::string& utf8) {
   return wide;
 }
 
-// Copies |source| into a fixed-size buffer, always null-terminated.
 template <size_t N>
 void CopyToBuffer(wchar_t (&destination)[N], const std::wstring& source) {
   size_t count = source.size() < N - 1 ? source.size() : N - 1;
@@ -144,7 +143,6 @@ bool SetAutostart(bool enabled) {
   if (status != ERROR_SUCCESS) {
     return false;
   }
-  // If the entry was switched off in Task Manager, switch it back on.
   ::RegDeleteKeyValueW(HKEY_CURRENT_USER, kStartupApprovedKey, kAutostartValue);
   return true;
 }
@@ -155,7 +153,6 @@ bool GetAutostart() {
                      nullptr, nullptr, &size) != ERROR_SUCCESS) {
     return false;
   }
-  // Task Manager's Startup tab records "disabled" as an odd first byte.
   BYTE approved[16] = {};
   DWORD approved_size = sizeof(approved);
   if (::RegGetValueW(HKEY_CURRENT_USER, kStartupApprovedKey, kAutostartValue,
@@ -202,7 +199,7 @@ std::optional<std::wstring> RunFileDialog(HWND owner, bool save,
   return std::wstring(buffer.data());
 }
 
-}  // namespace
+}
 
 PrayPlatform::PrayPlatform(HWND window, flutter::BinaryMessenger* messenger)
     : window_(window) {
@@ -243,7 +240,6 @@ PrayPlatform::~PrayPlatform() {
   }
 }
 
-// static
 UINT PrayPlatform::ShowWindowMessage() {
   static const UINT message = ::RegisterWindowMessageW(kShowWindowMessageName);
   return message;
@@ -257,7 +253,6 @@ bool PrayPlatform::HandleMessage(HWND window, UINT message, WPARAM wparam,
     return true;
   }
   if (taskbar_created_message_ != 0 && message == taskbar_created_message_) {
-    // Explorer restarted: its tray is empty again.
     tray_added_ = false;
     tray_retries_ = 0;
     AddTrayIcon();
@@ -282,7 +277,6 @@ bool PrayPlatform::HandleMessage(HWND window, UINT message, WPARAM wparam,
 
     case WM_TIMER:
       if (wparam == kTrayRetryTimer) {
-        // The taskbar may not exist yet right after login; keep trying.
         tray_retries_++;
         if (AddTrayIcon() || tray_retries_ >= kMaxTrayRetries) {
           ::KillTimer(window_, kTrayRetryTimer);
@@ -291,7 +285,6 @@ bool PrayPlatform::HandleMessage(HWND window, UINT message, WPARAM wparam,
         return true;
       }
       if (wparam == kQuitTimer) {
-        // Safety net: the Dart side did not finish the exit in time.
         ::KillTimer(window_, kQuitTimer);
         ::ExitProcess(0);
       }
@@ -304,7 +297,6 @@ bool PrayPlatform::HandleMessage(HWND window, UINT message, WPARAM wparam,
       if (tray_added_) {
         HideWindowNow();
       } else {
-        // Without a tray icon there would be no way to bring the window back.
         ::ShowWindow(window_, SW_MINIMIZE);
       }
       *result = 0;
@@ -347,8 +339,6 @@ void PrayPlatform::ShowWindowNow() {
 void PrayPlatform::HideWindowNow() { ::ShowWindow(window_, SW_HIDE); }
 
 void PrayPlatform::ToggleWindow() {
-  // Clicking the tray icon moves focus to the taskbar, so "is the foreground
-  // window" cannot be used here; visible means hide, anything else means show.
   if (::IsWindowVisible(window_) && !::IsIconic(window_)) {
     HideWindowNow();
   } else {
@@ -444,7 +434,6 @@ void PrayPlatform::ShowTrayMenu() {
 
   POINT cursor = {};
   ::GetCursorPos(&cursor);
-  // Required so the menu closes when the user clicks elsewhere.
   ::SetForegroundWindow(window_);
   const UINT command = static_cast<UINT>(::TrackPopupMenu(
       menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, cursor.x, cursor.y,
@@ -477,7 +466,7 @@ bool PrayPlatform::SetIconFromPixels(const EncodableValue* width_value,
   BITMAPV5HEADER header = {};
   header.bV5Size = sizeof(header);
   header.bV5Width = static_cast<LONG>(*width);
-  header.bV5Height = -static_cast<LONG>(*height);  // top-down
+  header.bV5Height = -static_cast<LONG>(*height);
   header.bV5Planes = 1;
   header.bV5BitCount = 32;
   header.bV5Compression = BI_BITFIELDS;
@@ -505,7 +494,6 @@ bool PrayPlatform::SetIconFromPixels(const EncodableValue* width_value,
     return false;
   }
 
-  // Straight (non-premultiplied) RGBA in, 0xAARRGGBB out.
   uint32_t* target = static_cast<uint32_t*>(bits);
   for (size_t i = 0; i < pixel_count; i++) {
     const uint8_t* source = rgba->data() + i * 4;
@@ -580,7 +568,6 @@ void PrayPlatform::OnTrayCall(const Call& call,
     }
     tray_retries_ = 0;
     if (!AddTrayIcon()) {
-      // The taskbar may not be ready yet (e.g. right after login).
       ::SetTimer(window_, kTrayRetryTimer, 2000, nullptr);
     }
   } else if (name == "setIcon") {
@@ -627,7 +614,6 @@ void PrayPlatform::OnSystemCall(const Call& call,
   if (name == "openUrl") {
     const auto url = args == nullptr ? std::nullopt
                                      : AsString(Find(*args, "url"));
-    // Only web links are opened; anything else could launch a program.
     if (!url || !(StartsWithIgnoreCase(*url, "https://") ||
                   StartsWithIgnoreCase(*url, "http://"))) {
       result->Error("bad-url", "Only http and https links can be opened.");

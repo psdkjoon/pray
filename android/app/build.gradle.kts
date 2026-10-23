@@ -27,6 +27,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appIcon"] =
+            (project.findProperty("appIcon") as String?) ?: "@mipmap/ic_launcher"
 
         if (!project.hasProperty("split-per-abi")) {
             val requested = (project.findProperty("target-platform") as String?)

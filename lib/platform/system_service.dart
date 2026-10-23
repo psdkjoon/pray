@@ -63,6 +63,24 @@ abstract class SystemService {
     }
   }
 
+  static Future<bool> isBackgroundAllowed() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      return await _channel.invokeMethod<bool>('isBackgroundAllowed') ?? true;
+    } on PlatformException {
+      return true;
+    }
+  }
+
+  static Future<void> requestBackgroundAccess() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('requestBackgroundAccess');
+    } on PlatformException {
+      return;
+    }
+  }
+
   static Future<String?> saveFile(String name, Uint8List bytes) async {
     if (Platform.isAndroid) {
       final ok = await _channel.invokeMethod<bool>('saveFile', {

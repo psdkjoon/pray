@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:pray/app.dart';
 import 'package:pray/app_info.dart';
 import 'package:pray/connection/connection_controller.dart';
+import 'package:pray/core/diagnostics.dart';
 import 'package:pray/core/kv_store.dart';
 import 'package:pray/core/startup_log.dart';
 import 'package:pray/localization/localization.dart';
@@ -13,6 +14,7 @@ import 'package:pray/platform/autostart_service.dart';
 import 'package:pray/platform/launcher_icon_service.dart';
 import 'package:pray/platform/notification_service.dart';
 import 'package:pray/platform/quick_tile_service.dart';
+import 'package:pray/platform/theme_sync_service.dart';
 import 'package:pray/platform/tray_service.dart';
 import 'package:pray/servers/servers_controller.dart';
 import 'package:pray/settings/app_settings.dart';
@@ -20,12 +22,14 @@ import 'package:pray/ui/startup_failure_screen.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(_start, (error, stack) {
+    Diagnostics.record(error, stack, source: 'zone');
     unawaited(StartupLog.write(error, stack));
   });
 }
 
 Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Diagnostics.init();
   final previousOnError = FlutterError.onError;
   FlutterError.onError = (details) {
     unawaited(StartupLog.write(details.exception, details.stack));
@@ -67,17 +71,9 @@ Future<void> _initPlatform(
   ConnectionController connection,
 ) async {
   try {
-    try {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    } on Object {
-      debugPrint('edge-to-edge unavailable');
-    }
+    unawaited(_edgeToEdge());
 
-    LauncherIconService.init(
-      settings,
-      refreshOn: connection,
-      canApply: () => connection.status == ConnectionStatus.disconnected,
-    );
+    LauncherIconService.init(settings);
 
     NotificationService.follow<ConnectionStatus>(
       connection,
@@ -89,6 +85,7 @@ Future<void> _initPlatform(
 
     if (Platform.isAndroid) {
       tasks.add(_initTile(connection));
+      tasks.add(ThemeSyncService.init(settings));
     }
 
     if (Platform.isLinux || Platform.isWindows) {
@@ -112,16 +109,40 @@ Future<void> _initPlatform(
   }
 }
 
+Future<void> _edgeToEdge() async {
+  await WidgetsBinding.instance.endOfFrame;
+  try {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  } on Object {
+    debugPrint('edge-to-edge unavailable');
+  }
+}
+
 Future<void> _initTile(ConnectionController connection) async {
-  await QuickTileService.init(connection.toggle);
-  await QuickTileService.enable();
   var last = _tileState(connection.status);
-  await QuickTileService.setState(last);
+  Future<void> push() {
+    last = _tileState(connection.status);
+    return QuickTileService.setState(last);
+  }
+
   connection.addListener(() {
-    final current = _tileState(connection.status);
-    if (current == last) return;
-    last = current;
-    unawaited(QuickTileService.setState(current));
+    if (_tileState(connection.status) != last) unawaited(push());
+  });
+
+  await QuickTileService.enable();
+  await push();
+  await QuickTileService.init(() async {
+    try {
+      await connection.toggle();
+    } on Object catch (failure, stack) {
+      Diagnostics.record(failure, stack, source: 'tile');
+      unawaited(QuickTileService.toast('$failure'));
+    }
+    final error = connection.lastError;
+    if (connection.status == ConnectionStatus.disconnected && error != null) {
+      unawaited(QuickTileService.toast(error.tr));
+    }
+    await push();
   });
 }
 

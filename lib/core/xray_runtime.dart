@@ -398,6 +398,15 @@ class XrayRuntime {
         )
         .toList();
     if (lines.isEmpty) return null;
+    final notices = RegExp(r'\[(Warning|Info|Debug)\]');
+    final problems = lines.where((l) => !notices.hasMatch(l)).toList();
+    if (problems.isNotEmpty) {
+      return problems.firstWhere(
+        (l) => RegExp('fail|error|denied|permitted', caseSensitive: false)
+            .hasMatch(l),
+        orElse: () => problems.last,
+      );
+    }
     return lines.firstWhere(
       (l) => RegExp('fail|error|denied|permitted', caseSensitive: false)
           .hasMatch(l),

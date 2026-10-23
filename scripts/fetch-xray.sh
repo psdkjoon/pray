@@ -2,7 +2,7 @@
 set -euo pipefail
 
 TARGET="${1:?usage: fetch-xray.sh android|linux-64|linux-arm64|windows-64|windows-arm64}"
-XRAY_VERSION="${XRAY_VERSION:-latest}"
+XRAY_VERSION="${XRAY_VERSION:-v26.6.27}"
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

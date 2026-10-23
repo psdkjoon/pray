@@ -18,15 +18,23 @@ import io.flutter.plugin.common.MethodChannel
 
 object EngineHolder {
     const val EXTRA_CONSENT = "ir.psdkjoon.pray.CONSENT"
+    const val EXTRA_TILE_CONNECT = "ir.psdkjoon.pray.TILE_CONNECT"
     const val REQUEST_VPN = 4711
     const val REQUEST_SAVE = 4712
     const val REQUEST_PICK = 4713
+    private const val CONSENT_TIMEOUT_MS = 120_000L
+    private const val SERVICE_TIMEOUT_MS = 10_000L
 
     private lateinit var appContext: Context
     private val main = Handler(Looper.getMainLooper())
 
     private var engine: FlutterEngine? = null
     private var tileChannel: MethodChannel? = null
+    private var themeSyncChannel: MethodChannel? = null
+    private var tileReady = false
+    private val startTimeout = Runnable {
+        finishStart(-1, "The VPN did not start in time.")
+    }
     private var pendingStart: MethodChannel.Result? = null
     private var awaitingConsent = false
     private var pendingToggle = false
@@ -36,6 +44,9 @@ object EngineHolder {
 
     @Volatile
     var activity: MainActivity? = null
+
+    @Volatile
+    var resumed = false
 
     fun ensure(context: Context): FlutterEngine {
         engine?.let { return it }
@@ -49,13 +60,64 @@ object EngineHolder {
         return created
     }
 
+    fun toast(message: String) {
+        main.post {
+            try {
+                android.widget.Toast.makeText(appContext, message, android.widget.Toast.LENGTH_LONG).show()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     fun toggleFromTile(context: Context) {
-        if (engine != null) {
-            tileChannel?.invokeMethod("toggleRequested", null)
+        ensure(context)
+        val channel = tileChannel
+        if (!tileReady || channel == null) {
+            pendingToggle = true
             return
         }
-        pendingToggle = true
+        channel.invokeMethod(
+            "toggleRequested",
+            null,
+            object : MethodChannel.Result {
+                override fun success(result: Any?) {}
+
+                override fun error(code: String, message: String?, details: Any?) {
+                    QuickTileService.setState(appContext, "off")
+                }
+
+                override fun notImplemented() {
+                    tileReady = false
+                    pendingToggle = true
+                }
+            },
+        )
+    }
+
+    fun dropPendingToggle() {
+        pendingToggle = false
+    }
+
+    fun connectAfterOpen() {
+        toggleFromTile(appContext)
+    }
+
+    fun requestThemeSync(context: Context, done: () -> Unit) {
         ensure(context)
+        val channel = themeSyncChannel
+        if (channel == null) {
+            done()
+            return
+        }
+        channel.invokeMethod(
+            "refresh",
+            null,
+            object : MethodChannel.Result {
+                override fun success(result: Any?) = done()
+                override fun error(code: String, message: String?, details: Any?) = done()
+                override fun notImplemented() = done()
+            },
+        )
     }
 
     private fun setUpChannels(e: FlutterEngine) {
@@ -75,9 +137,33 @@ object EngineHolder {
 
         MethodChannel(messenger, "pray/launcher_icon").setMethodCallHandler { call, result ->
             when (call.method) {
-                "set" -> {
-                    setLauncherIcon(call.argument<Boolean>("dark") ?: true)
+                "configure" -> {
+                    LauncherIcon.configure(
+                        call.argument<String>("mode") ?: "system",
+                        call.argument<String>("accent") ?: "",
+                        call.argument<Number>("updatedAt")?.toLong() ?: 0L,
+                    )
                     result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        val themeSync = MethodChannel(messenger, "pray/theme_sync")
+        themeSyncChannel = themeSync
+        themeSync.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "publish" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: true
+                    val accent = call.argument<String>("accent") ?: ""
+                    val mode = call.argument<String>("mode") ?: "system"
+                    val updatedAt = call.argument<Number>("updatedAt")?.toLong() ?: 0L
+                    ThemeSync.async(result) {
+                        ThemeSync.toMap(ThemeSync.publish(appContext, enabled, accent, mode, updatedAt))
+                    }
+                }
+                "pull" -> ThemeSync.async(result) {
+                    ThemeSync.toMap(ThemeSync.pull(appContext))
                 }
                 else -> result.notImplemented()
             }
@@ -90,6 +176,12 @@ object EngineHolder {
                 "abi" -> result.success(android.os.Build.SUPPORTED_ABIS.firstOrNull())
                 "requestNotifications" -> {
                     requestNotifications()
+                    result.success(null)
+                }
+                "isBackgroundAllowed" ->
+                    result.success(BatteryService.isIgnoring(appContext))
+                "requestBackgroundAccess" -> {
+                    BatteryService.request(appContext)
                     result.success(null)
                 }
                 "saveFile" -> startFile(
@@ -113,16 +205,21 @@ object EngineHolder {
                     result.success(null)
                 }
                 "setState" -> {
-                    QuickTileService.setState(
-                        appContext,
-                        call.argument<String>("state") ?: "off",
-                    )
+                    val value = call.argument<String>("state") ?: "off"
+                    if (!(pendingToggle && value == "off")) {
+                        QuickTileService.setState(appContext, value)
+                    }
                     result.success(null)
                 }
                 "consumeToggle" -> {
+                    tileReady = true
                     val value = pendingToggle
                     pendingToggle = false
                     result.success(value)
+                }
+                "toast" -> {
+                    toast(call.argument<String>("message") ?: "")
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }
@@ -293,42 +390,64 @@ object EngineHolder {
             return
         }
         pendingStart = result
-        val consent = VpnService.prepare(appContext)
-        if (consent == null) {
-            launchVpnService()
-            return
-        }
-        val current = activity
-        if (current != null) {
-            @Suppress("DEPRECATION")
-            current.startActivityForResult(consent, REQUEST_VPN)
-        } else {
-            awaitingConsent = true
-            appContext.startActivity(
-                Intent(appContext, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putExtra(EXTRA_CONSENT, true),
-            )
+        awaitingConsent = false
+        main.removeCallbacks(startTimeout)
+        main.postDelayed(startTimeout, CONSENT_TIMEOUT_MS)
+        try {
+            val consent = VpnService.prepare(appContext)
+            if (consent == null) {
+                launchVpnService()
+                return
+            }
+            val current = activity
+            if (current != null && resumed) {
+                @Suppress("DEPRECATION")
+                current.startActivityForResult(consent, REQUEST_VPN)
+            } else {
+                awaitingConsent = true
+                appContext.startActivity(
+                    Intent(appContext, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        .putExtra(EXTRA_CONSENT, true),
+                )
+            }
+        } catch (e: Exception) {
+            awaitingConsent = false
+            finishStart(-1, e.message ?: "Could not start the VPN.")
         }
     }
 
     fun consentIfWaiting(host: MainActivity) {
         if (!awaitingConsent) return
         awaitingConsent = false
-        val consent = VpnService.prepare(host)
-        if (consent == null) {
-            launchVpnService()
-        } else {
-            @Suppress("DEPRECATION")
-            host.startActivityForResult(consent, REQUEST_VPN)
+        try {
+            val consent = VpnService.prepare(host)
+            if (consent == null) {
+                launchVpnService()
+            } else {
+                @Suppress("DEPRECATION")
+                host.startActivityForResult(consent, REQUEST_VPN)
+            }
+        } catch (e: Exception) {
+            finishStart(-1, e.message ?: "Could not start the VPN.")
         }
     }
 
     fun onConsentResult(granted: Boolean) {
-        if (granted) launchVpnService() else finishStart(-1)
+        if (!granted) {
+            finishStart(-1)
+            return
+        }
+        try {
+            launchVpnService()
+        } catch (e: Exception) {
+            finishStart(-1, e.message ?: "Could not start the VPN.")
+        }
     }
 
     private fun launchVpnService() {
+        main.removeCallbacks(startTimeout)
+        main.postDelayed(startTimeout, SERVICE_TIMEOUT_MS)
         PrayVpnService.onEstablished = { fd -> main.post { finishStart(fd) } }
         val intent = Intent(appContext, PrayVpnService::class.java)
             .setAction(PrayVpnService.ACTION_START)
@@ -360,14 +479,21 @@ object EngineHolder {
         }.start()
     }
 
-    private fun finishStart(fd: Int) {
+    private fun finishStart(fd: Int, error: String? = null) {
+        main.removeCallbacks(startTimeout)
         PrayVpnService.onEstablished = null
+        awaitingConsent = false
         val result = pendingStart ?: return
         pendingStart = null
-        result.success(fd)
+        if (error != null) {
+            result.error("vpn_failed", error, null)
+        } else {
+            result.success(fd)
+        }
     }
 
     private fun stopVpn() {
+        if (pendingStart != null) finishStart(-1)
         PrayVpnService.instance?.shutdown()
         appContext.stopService(Intent(appContext, PrayVpnService::class.java))
     }
@@ -398,23 +524,5 @@ object EngineHolder {
             ) { _: Int -> }
         } catch (_: Exception) {
         }
-    }
-
-    private fun setLauncherIcon(dark: Boolean) {
-        val pm = appContext.packageManager
-        val mocha = ComponentName(appContext, "ir.psdkjoon.pray.IconMocha")
-        val latte = ComponentName(appContext, "ir.psdkjoon.pray.IconLatte")
-        val enable = if (dark) mocha else latte
-        val disable = if (dark) latte else mocha
-        pm.setComponentEnabledSetting(
-            enable,
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP,
-        )
-        pm.setComponentEnabledSetting(
-            disable,
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP,
-        )
     }
 }

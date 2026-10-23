@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:pray/app_info.dart';
 import 'package:pray/connection/connection_controller.dart';
 import 'package:pray/localization/localization.dart';
+import 'package:pray/platform/accent_icon.dart';
 import 'package:pray/platform/app_icon.dart';
 import 'package:pray/platform/window_service.dart';
 import 'package:pray/settings/app_settings.dart';
@@ -76,7 +77,8 @@ class TrayService with WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() => _syncIcon();
 
-  String _stateKey(bool dark) => '${dark ? 'd' : 'l'}-$_dotState';
+  String _stateKey(bool dark) =>
+      '${dark ? 'd' : 'l'}-${_settings.accent}-$_dotState';
 
   String get _dotState {
     if (_connection.status != ConnectionStatus.connected) return 'off';
@@ -106,14 +108,7 @@ class TrayService with WidgetsBindingObserver {
         _ => dark ? const Color(0xFFF38BA8) : const Color(0xFFD20F39),
       };
 
-  Future<ui.Image> _renderDot(Uint8List png, bool dark, {int? size}) async {
-    final codec = await ui.instantiateImageCodec(
-      png,
-      targetWidth: size,
-      targetHeight: size,
-    );
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
+  Future<ui.Image> _renderDot(ui.Image image, bool dark) async {
     final w = image.width.toDouble();
     final h = image.height.toDouble();
     final recorder = ui.PictureRecorder();
@@ -138,23 +133,22 @@ class TrayService with WidgetsBindingObserver {
     return recorder.endRecording().toImage(image.width, image.height);
   }
 
-  Future<Uint8List> _withDot(Uint8List png, bool dark) async {
-    final out = await _renderDot(png, dark);
-    final data = await out.toByteData(format: ui.ImageByteFormat.png);
-    return data!.buffer.asUint8List();
+  Future<ui.Image> _icon(bool dark, {int? size}) async {
+    final bytes = await rootBundle.load(
+      dark ? AppIcon.trayMocha : AppIcon.trayLatte,
+    );
+    final tinted = await AccentIcon.tinted(
+      bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      dark: dark,
+      accent: _settings.accent,
+      size: size,
+    );
+    return _renderDot(tinted, dark);
   }
 
   Future<Map<String, Object>> _iconArgs(bool dark) async {
     if (Platform.isWindows) {
-      final bytes = await rootBundle.load(
-        dark ? AppIcon.trayMocha : AppIcon.trayLatte,
-      );
-      const size = 32;
-      final image = await _renderDot(
-        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-        dark,
-        size: size,
-      );
+      final image = await _icon(dark, size: 32);
       final data = await image.toByteData(
         format: ui.ImageByteFormat.rawStraightRgba,
       );
@@ -168,17 +162,12 @@ class TrayService with WidgetsBindingObserver {
   }
 
   Future<String> _iconFilePath(bool dark) async {
-    final bytes = await rootBundle.load(
-      dark ? AppIcon.trayMocha : AppIcon.trayLatte,
-    );
-    final png = await _withDot(
-      bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-      dark,
-    );
+    final image = await _icon(dark);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
     final file = File(
-      '${Directory.systemTemp.path}/${AppInfo.name.toLowerCase()}-tray-${dark ? 'dark' : 'light'}-$_dotState.png',
+      '${Directory.systemTemp.path}/${AppInfo.name.toLowerCase()}-tray-${dark ? 'dark' : 'light'}-${_settings.accent}-$_dotState.png',
     );
-    await file.writeAsBytes(png, flush: true);
+    await file.writeAsBytes(data!.buffer.asUint8List(), flush: true);
     return file.path;
   }
 

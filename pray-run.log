@@ -1,0 +1,247 @@
+[  +12 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] executing: [/home/psdk/dev/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[   +4 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-09-30 15:02:49 -0700
+[  +14 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +18 ms] Flutter assets will be downloaded from https://pub.myket.ir. Make sure you trust this source!
+[   +6 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +20 ms] Skipping pub get: version match.
+[  +59 ms] Generating /home/psdk/git/pray/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+[   +6 ms] Skipping generating GeneratedPluginRegistrant.java because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[        ] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[   +1 ms] Skipping generating generated_plugins.cmake because it is up-to-date.
+[        ] Skipping generating generated_plugin_registrant.h because it is up-to-date.
+[        ] Skipping generating generated_plugin_registrant.cc because it is up-to-date.
+[        ] Skipping generating generated_plugins.cmake because it is up-to-date.
+[  +41 ms] Initializing file store
+[   +7 ms] Skipping target: gen_localizations
+[   +2 ms] gen_dart_plugin_registrant: Starting due to {InvalidatedReasonKind.inputChanged: The following inputs have updated contents: /home/psdk/git/pray/.dart_tool/package_config.json}
+[  +16 ms] gen_dart_plugin_registrant: Complete
+[   +1 ms] Skipping target: _composite
+[   +1 ms] complete
+[   +3 ms] Launching lib/main.dart on Linux in debug mode...
+[   +2 ms] /home/psdk/dev/flutter/bin/cache/dart-sdk/bin/dartaotruntime /home/psdk/dev/flutter/bin/cache/dart-sdk/bin/snapshots/frontend_server_aot.dart.snapshot --sdk-root /home/psdk/dev/flutter/bin/cache/artifacts/engine/common/flutter_patched_sdk/ --incremental --target=flutter --experimental-emit-debug-metadata -DFLUTTER_BUILD_NAME=1.5.0 -DFLUTTER_VERSION=3.47.6 -DFLUTTER_CHANNEL=stable -DFLUTTER_GIT_URL=https://github.com/flutter/flutter.git -DFLUTTER_FRAMEWORK_REVISION=5fc346839b -DFLUTTER_ENGINE_REVISION=692136cb65 -DFLUTTER_DART_VERSION=3.13.5 --output-dill /tmp/flutter_tools.VTVUJO/flutter_tool.NYTADM/app.dill --packages /home/psdk/git/pray/.dart_tool/package_config.json -Ddart.vm.profile=false -Ddart.vm.product=false --enable-asserts --track-widget-creation --filesystem-scheme org-dartlang-root --initialize-from-dill build/ea2e5e36e5bdd7d51dcf13fa53658605.cache.dill.track.dill --verbosity=error --enable-experiment=alternative-invalidation-strategy
+[  +11 ms] Building Linux application...
+[   +5 ms] <- compile package:pray/main.dart
+[   +1 ms] executing: [/home/psdk/git/pray/build/linux/x64/debug/] cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DFLUTTER_TARGET_PLATFORM=linux-x64 /home/psdk/git/pray/linux
+[  +30 ms] -- Configuring done (0.0s)
+[   +9 ms] -- Generating done (0.0s)
+[        ] -- Build files have been written to: /home/psdk/git/pray/build/linux/x64/debug
+[   +4 ms] executing: ninja -C /home/psdk/git/pray/build/linux/x64/debug install
+[   +5 ms] ninja: Entering directory `/home/psdk/git/pray/build/linux/x64/debug'
+[+3031 ms] [1/7] Generating /home/psdk/git/pray/linux/flutter/ephemeral/libflutter_linux_gtk.so, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_basic_message_channel.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_binary_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_binary_messenger.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_dart_project.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_engine.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_json_message_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_json_method_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_message_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_method_call.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_method_channel.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_method_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_method_response.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_plugin_registrar.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_plugin_registry.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_standard_message_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_standard_method_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_string_codec.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_value.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/fl_view.h, /home/psdk/git/pray/linux/flutter/ephemeral/flutter_linux/flutter_linux.h, _phony_
+[        ] [  +16 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] [   +6 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] [  +23 ms] Flutter assets will be downloaded from https://pub.myket.ir. Make sure you trust this source!
+[        ] [  +15 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] [        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] [   +8 ms] Initializing file store
+[        ] [   +8 ms] Done initializing file store
+[        ] [  +75 ms] Skipping target: build_hooks
+[        ] [   +1 ms] Skipping target: gen_dart_plugin_registrant
+[        ] [ +411 ms] Skipping target: unpack_linux
+[        ] [        ] Skipping target: gen_localizations
+[        ] [ +349 ms] Skipping target: kernel_snapshot_program
+[        ] [   +2 ms] Skipping target: link_hooks
+[        ] [        ] Skipping target: install_code_assets
+[        ] [        ] invalidated build due to missing files: /home/psdk/git/pray/DOES_NOT_EXIST_RERUN_FOR_WILDCARD1046872899
+[        ] [ +769 ms] debug_bundle_linux-x64_assets: Starting due to {InvalidatedReasonKind.inputMissing: The following inputs were missing: /home/psdk/git/pray/DOES_NOT_EXIST_RERUN_FOR_WILDCARD1046872899}
+[        ] [  +87 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
+[   +1 ms] [   +9 ms] impellerc command: [/home/psdk/dev/flutter/bin/cache/artifacts/engine/linux-x64/impellerc, --sksl, --runtime-stage-gles, --runtime-stage-gles3, --runtime-stage-vulkan, --iplr, --sl=/home/psdk/git/pray/build/flutter_assets/shaders/ink_sparkle.frag, --spirv=/home/psdk/git/pray/build/flutter_assets/shaders/ink_sparkle.frag.spirv, --input=/home/psdk/dev/flutter/packages/flutter/lib/src/material/shaders/ink_sparkle.frag, --input-type=frag, --include=/home/psdk/dev/flutter/packages/flutter/lib/src/material/shaders, --include=/home/psdk/dev/flutter/bin/cache/artifacts/engine/linux-x64/shader_lib]
+[   +3 ms] [   +1 ms] impellerc command: [/home/psdk/dev/flutter/bin/cache/artifacts/engine/linux-x64/impellerc, --sksl, --runtime-stage-gles, --runtime-stage-gles3, --runtime-stage-vulkan, --iplr, --sl=/home/psdk/git/pray/build/flutter_assets/shaders/stretch_effect.frag, --spirv=/home/psdk/git/pray/build/flutter_assets/shaders/stretch_effect.frag.spirv, --input=/home/psdk/dev/flutter/packages/flutter/lib/src/widgets/shaders/stretch_effect.frag, --input-type=frag, --include=/home/psdk/dev/flutter/packages/flutter/lib/src/widgets/shaders, --include=/home/psdk/dev/flutter/bin/cache/artifacts/engine/linux-x64/shader_lib]
+[        ] [ +449 ms] debug_bundle_linux-x64_assets: Complete
+[        ] [ +491 ms] Persisting file store
+[        ] [   +4 ms] Done persisting file store
+[        ] [   +9 ms] build succeeded.
+[        ] [        ] "flutter assemble" took 2,729ms.
+[        ] [        ] Running 1 shutdown hook
+[        ] [        ] Shutdown hooks complete
+[        ] [        ] exiting with code 0
+[  +66 ms] [2/3] Linking CXX executable intermediates_do_not_run/pray
+[        ] [2/3] Install the project...
+[   +5 ms] -- Install configuration: "Debug"
+[   +9 ms] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/pray
+[        ] -- Set non-toolchain portion of runtime path of "/home/psdk/git/pray/build/linux/x64/debug/bundle/pray" to "$ORIGIN/lib"
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/icudtl.dat
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/lib/libflutter_linux_gtk.so
+[  +19 ms] -- Up-to-date: /home/psdk/git/pray/build/linux/x64/debug/bundle/lib
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES.Z
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/fonts
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/AssetManifest.bin
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/kernel_blob.bin
+[  +23 ms] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/NativeAssetsManifest.json
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/shaders
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/shaders/stretch_effect.frag
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/shaders/ink_sparkle.frag
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/icon_latte.svg
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/tray_mocha.png
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/icon_mocha.svg
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/tray_latte.png
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/coins
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/coins/btc.svg
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/coins/usdc.svg
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/icons/coins/usdt.svg
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/SpaceGrotesk-Variable.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSans-Bold.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSansArabic-Regular.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSansJP-Regular.otf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSansArabic-Medium.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSansJP-Bold.otf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSansArabic-Bold.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSans-Regular.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/fonts/noto/NotoSans-Medium.ttf
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/linux
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/linux/geosite.dat
+[   +3 ms] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/linux/xray
+[  +16 ms] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/linux/geoip.dat
+[   +7 ms] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/windows
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/assets/xray/windows/xray.exe
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/FontManifest.json
+[        ] -- Installing: /home/psdk/git/pray/build/linux/x64/debug/bundle/data/flutter_assets/version.json
+[   +2 ms] Building Linux application... (completed in 3.3s)
+[        ] ✓ Built build/linux/x64/debug/bundle/pray
+[  +81 ms] [IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(126)] Using the Impeller rendering backend (OpenGLESSDF).
+[  +46 ms] VM Service URL on device: http://127.0.0.1:41933/ZN370ZtoBGw=/
+[   +2 ms] Caching compiled dill
+[  +34 ms] Connecting to service protocol: http://127.0.0.1:41933/ZN370ZtoBGw=/
+[  +77 ms] Launching a Dart Developer Service (DDS) instance at http://127.0.0.1:0, connecting to VM service at http://127.0.0.1:41933/ZN370ZtoBGw=/.
+[   +1 ms] Gdk-Message: 01:06:49.215: Unable to load  from the cursor theme
+[  +52 ms] Successfully connected to service protocol: http://127.0.0.1:41933/ZN370ZtoBGw=/
+[   +6 ms] DevFS: Creating new filesystem on the device (null)
+[  +19 ms] DevFS: Created new filesystem on the device (file:///tmp/prayGRLFBS/pray/)
+[   +1 ms] Updating assets for linux
+[        ] runHooks() with {TargetFile: /home/psdk/git/pray/lib/main.dart, BuildMode: debug} and TargetPlatform.linux_x64
+[        ] runHooks() - will perform dart build
+[  +14 ms] No packages with native assets. Skipping native assets compilation.
+[        ] runHooks() - done
+[  +41 ms] Manifest contained wildcard assets. Inserting missing file into build graph to force rerun. for more information see #56466.
+[   +2 ms] Syncing files to device Linux...
+[   +2 ms] Compiling dart to kernel with 0 updated files
+[        ] Processing bundle.
+[   +1 ms] <- recompile package:pray/main.dart 557f1a23-26de-4008-90bd-1065d3f46f90
+[        ] <- 557f1a23-26de-4008-90bd-1065d3f46f90
+[   +2 ms] Bundle processing done.
+[  +57 ms] Updating files.
+[        ] Pending asset builds completed. Writing dirty entries.
+[        ] DevFS: Sync finished
+[        ] Syncing files to device Linux... (completed in 64ms)
+[        ] Synced 0.0MB.
+[        ] <- accept
+[   +1 ms] Connected to _flutterView/0x5617adbe2690.
+[   +1 ms] Flutter run key commands.
+[        ] r Hot reload. 🔥🔥🔥
+[        ] R Hot restart.
+[        ] h List all available interactive commands.
+[        ] d Detach (terminate "flutter run" but leave application running).
+[        ] c Clear the screen
+[        ] q Quit (terminate the application on the device).
+[        ] A Dart VM Service on Linux is available at: http://127.0.0.1:34093/GlH7vrLsbz4=/
+[        ] The Flutter DevTools debugger and profiler on Linux is available at: http://127.0.0.1:34093/GlH7vrLsbz4=/devtools/?uri=ws://127.0.0.1:34093/GlH7vrLsbz4=/ws

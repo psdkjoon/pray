@@ -51,7 +51,30 @@ class L10n {
 
   static bool get rtl => _rtlCodes.contains(code);
 
-  static String tr(String text) {
+  static String tr(String text) => digits(_translate(text));
+
+  static final _latinLetter = RegExp('[A-Za-z]');
+
+  static String digits(String text) {
+    if (code != 'fa' || text.isEmpty) return text;
+    return text.splitMapJoin(
+      RegExp(r'\S+'),
+      onMatch: (m) {
+        final word = m[0]!;
+        if (word.contains('/') ||
+            word.contains('@') ||
+            _latinLetter.hasMatch(word)) {
+          return word;
+        }
+        return String.fromCharCodes([
+          for (final unit in word.codeUnits)
+            unit >= 0x30 && unit <= 0x39 ? unit - 0x30 + 0x6F0 : unit,
+        ]);
+      },
+    );
+  }
+
+  static String _translate(String text) {
     final table = _tables[code];
     if (table == null || text.isEmpty) return text;
     final exact = table[text];
@@ -59,17 +82,17 @@ class L10n {
     const lock = ' — disconnect to change';
     if (text.endsWith(lock)) {
       final head = text.substring(0, text.length - lock.length);
-      return '${tr(head)}${table[lock] ?? lock}';
+      return '${_translate(head)}${table[lock] ?? lock}';
     }
     if (text.contains('\n\n')) {
-      return text.split('\n\n').map(tr).join('\n\n');
+      return text.split('\n\n').map(_translate).join('\n\n');
     }
     for (final pattern in _patternsFor(table)) {
       final match = pattern.regex.firstMatch(text);
       if (match == null) continue;
       var out = pattern.template;
       for (var i = 1; i <= match.groupCount; i++) {
-        out = out.replaceFirst('{}', tr(match.group(i)!));
+        out = out.replaceFirst('{}', _translate(match.group(i)!));
       }
       return out;
     }

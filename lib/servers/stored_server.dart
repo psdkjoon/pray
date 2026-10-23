@@ -8,6 +8,7 @@ class StoredServer {
     required this.proxy,
     this.pingMs,
     this.pinned = false,
+    this.groupId,
   });
 
   final String id;
@@ -15,15 +16,39 @@ class StoredServer {
   final int? pingMs;
   final bool pinned;
 
+  final String? groupId;
+
   String get name => proxy.displayName;
   String get summary => proxy.summary;
   String get address => '${proxy.address}:${proxy.port}';
 
   StoredServer withPing(int? ms) {
-    return StoredServer(id: id, proxy: proxy, pingMs: ms, pinned: pinned);
+    return StoredServer(
+      id: id,
+      proxy: proxy,
+      pingMs: ms,
+      pinned: pinned,
+      groupId: groupId,
+    );
   }
 
   StoredServer withPinned({required bool pinned}) {
-    return StoredServer(id: id, proxy: proxy, pingMs: pingMs, pinned: pinned);
+    return StoredServer(
+      id: id,
+      proxy: proxy,
+      pingMs: pingMs,
+      pinned: pinned,
+      groupId: groupId,
+    );
+  }
+
+  StoredServer withProxy(ProxyServer proxy) {
+    return StoredServer(
+      id: id,
+      proxy: proxy,
+      pingMs: pingMs,
+      pinned: pinned,
+      groupId: groupId,
+    );
   }
 }

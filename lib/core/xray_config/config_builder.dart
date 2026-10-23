@@ -113,6 +113,7 @@ class XrayConfigOptions {
     this.tunSystemRoutes = false,
     this.socketMark,
     this.statsApiPort,
+    this.metricsPort,
     this.logLevel = 'warning',
     this.remoteDns = const ['1.1.1.1', '8.8.8.8'],
     this.fakeDns = false,
@@ -138,6 +139,8 @@ class XrayConfigOptions {
   final int? socketMark;
 
   final int? statsApiPort;
+
+  final int? metricsPort;
   final String logLevel;
   final List<String> remoteDns;
   final bool fakeDns;
@@ -171,12 +174,8 @@ Map<String, Object?> buildXrayConfig(
 
   return {
     'log': {'loglevel': options.logLevel},
-    if (apiPort != null) ...{
+    if (apiPort != null || options.metricsPort != null) ...{
       'stats': <String, Object?>{},
-      'api': {
-        'tag': 'api',
-        'services': ['StatsService'],
-      },
       'policy': {
         'system': {
           'statsOutboundUplink': true,
@@ -184,6 +183,16 @@ Map<String, Object?> buildXrayConfig(
         },
       },
     },
+    if (apiPort != null)
+      'api': {
+        'tag': 'api',
+        'services': ['StatsService'],
+      },
+    if (options.metricsPort != null)
+      'metrics': {
+        'tag': 'metrics',
+        'listen': '127.0.0.1:${options.metricsPort}',
+      },
     'dns': _dns(server, options),
     if (options.fakeDns)
       'fakedns': [
@@ -256,6 +265,42 @@ String buildXrayConfigJson(
   return pretty
       ? const JsonEncoder.withIndent('  ').convert(config)
       : jsonEncode(config);
+}
+
+Map<String, Object?> buildPingConfig(
+  List<ProxyServer> servers,
+  List<int> ports,
+) {
+  assert(servers.length == ports.length, 'one port per server');
+  return {
+    'log': {'loglevel': 'none'},
+    'inbounds': [
+      for (var i = 0; i < servers.length; i++)
+        {
+          'tag': 'in-$i',
+          'listen': '127.0.0.1',
+          'port': ports[i],
+          'protocol': 'http',
+          'settings': <String, Object?>{},
+        },
+    ],
+    'outbounds': [
+      for (var i = 0; i < servers.length; i++)
+        {..._proxyOutbound(servers[i], null), 'tag': 'out-$i'},
+      {'tag': 'direct', 'protocol': 'freedom'},
+    ],
+    'routing': {
+      'domainStrategy': 'AsIs',
+      'rules': [
+        for (var i = 0; i < servers.length; i++)
+          {
+            'type': 'field',
+            'inboundTag': ['in-$i'],
+            'outboundTag': 'out-$i',
+          },
+      ],
+    },
+  };
 }
 
 Map<String, Object?> _dns(ProxyServer? server, XrayConfigOptions options) {

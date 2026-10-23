@@ -367,10 +367,6 @@ static void on_watcher_registered(GObject* source, GAsyncResult* result,
   if (reply != nullptr) g_variant_unref(reply);
 }
 
-// Registers our item with the StatusNotifierWatcher. This runs every time the
-// watcher shows up on the bus, not just once at startup: when the app is
-// started at login the panel (and its tray) is often not ready yet, and a
-// single early attempt would leave the app without a tray icon for good.
 static void register_with_watcher() {
   if (state == nullptr || state->connection == nullptr ||
       state->bus_name == nullptr)
@@ -409,8 +405,6 @@ static void on_name_acquired(GDBusConnection* connection, const gchar* name,
   if (state->watcher_id != 0) return;
   g_free(state->bus_name);
   state->bus_name = g_strdup(name);
-  // Calls on_watcher_appeared right away if the watcher already exists, and
-  // again whenever it (re)appears later.
   state->watcher_id = g_bus_watch_name_on_connection(
       connection, "org.kde.StatusNotifierWatcher",
       G_BUS_NAME_WATCHER_FLAGS_NONE, on_watcher_appeared, on_watcher_vanished,

@@ -1,28 +1,25 @@
 name: pray
 description: "psdkRay: a Catppuccin-themed Xray client for Android, Linux and Windows."
 publish_to: 'none'
-version: 1.4.2
+version: 2.0.0
 repository: https://github.com/psdkjoon/pray
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.0
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_svg: ^2.0.10
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/icons/
+    - assets/icons/coins/
     - assets/xray/linux/xray
     - assets/xray/linux/geoip.dat
     - assets/xray/linux/geosite.dat

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text, Icon;
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import 'package:pray/settings/app_settings.dart';
 import 'package:pray/theme/app_spacing.dart';
 import 'package:pray/theme/catppuccin.dart';
 import 'package:pray/ui/dns_leak_dialog.dart';
+import 'package:pray/ui/about_section.dart';
 import 'package:pray/ui/language_sheet.dart';
 import 'package:pray/ui/widgets/page_frame.dart';
 import 'package:pray/ui/widgets/settings_section.dart';
@@ -70,6 +73,15 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     _AccentTile(settings: settings),
+                    if (Platform.isAndroid)
+                      SwitchListTile(
+                        title: const Text('Sync theme'),
+                        subtitle: const Text(
+                          'Use the same accent and theme in my other apps on this phone',
+                        ),
+                        value: settings.syncAppearance,
+                        onChanged: (value) => settings.syncAppearance = value,
+                      ),
                   ],
                 ),
                 if (L10n.languages.length > 1)
@@ -84,19 +96,6 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                SettingsSection(
-                  title: 'Updates',
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Check for updates'),
-                      subtitle: const Text(
-                        'Look for a newer version when the app starts',
-                      ),
-                      value: settings.checkUpdates,
-                      onChanged: (value) => settings.checkUpdates = value,
-                    ),
-                  ],
-                ),
                 SettingsSection(
                   title: 'Network',
                   children: [
@@ -200,6 +199,20 @@ class SettingsScreen extends StatelessWidget {
                     _GeoDataTile(),
                   ],
                 ),
+                SettingsSection(
+                  title: 'Updates',
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Check for updates'),
+                      subtitle: const Text(
+                        'Look for a newer version when the app starts',
+                      ),
+                      value: settings.checkUpdates,
+                      onChanged: (value) => settings.checkUpdates = value,
+                    ),
+                  ],
+                ),
+                const AboutSection(),
               ],
             ),
           ),
